@@ -1,0 +1,3 @@
+[OOTB]
+# Aero7 has its own installer/OOBE. Do not launch the theme's duplicate wizard.
+wizardRun=true

@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Safe recovery and diagnostic commands for Aero7 Desktop."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+from datetime import datetime, timezone
+
+SHELL_UNITS = ("plasma-plasmashell.service", "aero7-session-setup.service", "aero7-shell.service")
+
+
+def run(command: tuple[str, ...]) -> int:
+    return subprocess.run(command, check=False).returncode
+
+
+def state_root() -> Path:
+    return Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "aero7-desktop"
+
+
+def status() -> int:
+    health = state_root() / "health.json"
+    if health.exists():
+        print(json.dumps(json.loads(health.read_text(encoding="utf-8")), indent=2, sort_keys=True))
+    else:
+        print("Aero7 Desktop has not written health state yet.")
+    return run(("systemctl", "--user", "--no-pager", "--full", "status", "aero7-shell.service"))
+
+
+def logs(lines: int) -> int:
+    local_log = state_root() / "session.log"
+    if local_log.exists():
+        content = local_log.read_text(encoding="utf-8", errors="replace").splitlines()
+        print("\n".join(content[-lines:]))
+    command = ["journalctl", "--user", "-n", str(lines), "--no-pager"]
+    for unit in SHELL_UNITS:
+        command.extend(("-u", unit))
+    return run(tuple(command))
+
+
+def restart_units(units: tuple[str, ...]) -> int:
+    run(("systemctl", "--user", "reset-failed", *units))
+    return run(("systemctl", "--user", "restart", *units))
+
+
+def acknowledge_component(component: str = "AeroShell") -> None:
+    marker = state_root() / f"recovery-{component}.shown"
+    marker.unlink(missing_ok=True)
+    recovery = state_root() / "recovery.json"
+    if recovery.exists():
+        try:
+            payload = json.loads(recovery.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return
+        if payload.get("failed_component") == component:
+            recovery.unlink(missing_ok=True)
+
+
+def reset_state() -> int:
+    config_root = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "aero7-desktop"
+    if not config_root.exists():
+        return restart_units(SHELL_UNITS)
+    backup_root = state_root() / "reset-backups"
+    backup_root.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    destination = backup_root / f"aero7-desktop-{stamp}"
+    try:
+        config_root.rename(destination)
+    except OSError as error:
+        print(f"Could not back up shell state: {error}", file=sys.stderr)
+        return 1
+    print(f"Shell state backed up to {destination}")
+    return restart_units(SHELL_UNITS)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="aero7-recovery")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("status", help="show component and service health")
+    sub.add_parser("restart-shell", help="restart Aero7 shell supervision")
+    component_parser = sub.add_parser("restart-component", help="restart the AeroShell surface")
+    component_parser.add_argument("component", choices=("AeroShell",), nargs="?", default="AeroShell")
+    sub.add_parser("reset-state", help="back up shell state and restore known-good defaults")
+    log_parser = sub.add_parser("logs", help="show recent recovery diagnostics")
+    log_parser.add_argument("--lines", type=int, default=100)
+    args = parser.parse_args()
+    if args.command == "status":
+        return status()
+    if args.command == "restart-shell":
+        result = restart_units(SHELL_UNITS)
+        if result == 0:
+            acknowledge_component()
+        return result
+    if args.command == "restart-component":
+        result = restart_units(SHELL_UNITS)
+        if result == 0:
+            acknowledge_component(args.component)
+        return result
+    if args.command == "reset-state":
+        return reset_state()
+    if args.command == "logs":
+        return logs(max(1, args.lines))
+    return 64
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

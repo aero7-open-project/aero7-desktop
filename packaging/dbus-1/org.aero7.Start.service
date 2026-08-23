@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.aero7.Start
+Exec=/usr/bin/aero7-start
+SystemdService=aero7-start.service

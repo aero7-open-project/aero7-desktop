@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Aero7 Desktop
+Comment=Aero7 desktop session using KWin and stable KDE infrastructure
+Exec=/usr/bin/aero7-session
+TryExec=/usr/bin/aero7-session
+Type=Application
+X-KDE-SessionType=wayland
+X-GDM-SessionRegisters=true

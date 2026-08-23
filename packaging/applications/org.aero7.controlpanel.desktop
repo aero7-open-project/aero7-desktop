@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Control Panel
+GenericName=Computer Settings
+Comment=Change Aero7 computer settings
+Exec=aero7-control-panel
+Icon=preferences-system
+Categories=Settings;
+StartupNotify=true
+X-KDE-StartupNotify=true
+X-GNOME-UsesNotifications=true

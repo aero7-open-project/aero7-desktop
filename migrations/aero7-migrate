@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Idempotent and non-destructive Aero7 Desktop configuration migration."""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import shutil
+import sys
+from datetime import datetime, timezone
+
+SCHEMA = 4
+VERSION = "0.2.0"
+PLASMA_FILES = (
+    "plasma-org.kde.plasma.desktop-appletsrc",
+    "plasmashellrc",
+    "kwinrc",
+    "kglobalshortcutsrc",
+    "kcminputrc",
+)
+
+KWIN_DEFAULTS = {
+    "org.kde.kdecoration2": {
+        "library": "org.smod.smod",
+        "theme": "SMOD",
+        "ButtonsOnLeft": "M",
+        "ButtonsOnRight": "H_IAX",
+    },
+    "TabBox": {"LayoutName": "thumbnail_aero", "ShowDesktopMode": "1"},
+    "TabBoxAlternative": {"LayoutName": "flip3d", "ShowDesktopMode": "1"},
+    "Plugins": {
+        "aeroglassblurEnabled": "true",
+        "blurEnabled": "false",
+        "fadingpopupsaeroEnabled": "false",
+        "fadingpopupsEnabled": "true",
+        "smodglowEnabled": "false",
+        "smodpeekeffectEnabled": "false",
+        "smodpeekscriptEnabled": "true",
+        "libkwin_effect_smodsnapEnabled": "true",
+        "aero7shakeEnabled": "true",
+        "aero7snapEnabled": "true",
+        "squashaeroEnabled": "false",
+        "squashEnabled": "true",
+    },
+}
+
+SHORTCUT_DEFAULTS = {
+    "kwin": {
+        "Walk Through Windows": "Alt+Tab,Alt+Tab,Walk Through Windows",
+        "Walk Through Windows (Reverse)": (
+            "Alt+Shift+Tab,Alt+Shift+Tab,Walk Through Windows (Reverse)"
+        ),
+        "Walk Through Windows Alternative": (
+            "Meta+Tab,Meta+Tab,Walk Through Windows Alternative"
+        ),
+        "Walk Through Windows Alternative (Reverse)": (
+            "Meta+Shift+Tab,Meta+Shift+Tab,Walk Through Windows Alternative (Reverse)"
+        ),
+    }
+}
+
+
+def atomic_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".new")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.chmod(temporary, 0o600)
+    temporary.replace(path)
+
+
+def apply_ini_settings(path: Path, settings: dict[str, dict[str, str]]) -> list[str]:
+    """Set only Aero7-owned keys while preserving unrelated text and comments."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    except FileNotFoundError:
+        lines = []
+    changes: list[str] = []
+    for section, values in settings.items():
+        section_start = next(
+            (index for index, line in enumerate(lines) if line.strip() == f"[{section}]"), None
+        )
+        if section_start is None:
+            if lines and lines[-1].strip():
+                lines.append("\n")
+            lines.append(f"[{section}]\n")
+            section_start = len(lines) - 1
+            section_end = len(lines)
+        else:
+            section_end = next(
+                (index for index in range(section_start + 1, len(lines))
+                 if lines[index].lstrip().startswith("[")),
+                len(lines),
+            )
+        for key, value in values.items():
+            key_index = next(
+                (index for index in range(section_start + 1, section_end)
+                 if lines[index].split("=", 1)[0].strip() == key and "=" in lines[index]),
+                None,
+            )
+            replacement = f"{key}={value}\n"
+            if key_index is None:
+                lines.insert(section_end, replacement)
+                section_end += 1
+                changes.append(f"{path.name}:[{section}]/{key}:added")
+            elif lines[key_index] != replacement:
+                lines[key_index] = replacement
+                changes.append(f"{path.name}:[{section}]/{key}:updated")
+    if changes:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix(path.suffix + ".aero7-new")
+        temporary.write_text("".join(lines), encoding="utf-8")
+        os.chmod(temporary, 0o600)
+        temporary.replace(path)
+    return changes
+
+
+def migrate(config_home: Path, state_home: Path) -> dict:
+    state_root = state_home / "aero7-desktop"
+    marker = state_root / "migration.json"
+    if marker.exists():
+        current = json.loads(marker.read_text(encoding="utf-8"))
+        if current.get("schema") == SCHEMA and current.get("version") == VERSION:
+            return current
+
+    backup_root = state_root / "backups" / f"pre-{VERSION}"
+    backup_root.mkdir(parents=True, exist_ok=True)
+    backed_up: list[str] = []
+    for name in PLASMA_FILES:
+        source = config_home / name
+        target = backup_root / name
+        if source.is_file():
+            if not target.exists():
+                shutil.copy2(source, target)
+                os.chmod(target, 0o600)
+            backed_up.append(name)
+
+    changes = []
+    changes.extend(apply_ini_settings(config_home / "kwinrc", KWIN_DEFAULTS))
+    changes.extend(apply_ini_settings(config_home / "kglobalshortcutsrc", SHORTCUT_DEFAULTS))
+
+    payload = {
+        "schema": SCHEMA,
+        "version": VERSION,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "backup": str(backup_root),
+        "backed_up": sorted(backed_up),
+        "changes": changes,
+    }
+    atomic_json(marker, payload)
+    return payload
+
+
+def main() -> int:
+    home = Path.home()
+    config_home = Path(os.environ.get("AERO7_CONFIG_HOME", os.environ.get("XDG_CONFIG_HOME", home / ".config")))
+    state_home = Path(os.environ.get("AERO7_STATE_HOME", os.environ.get("XDG_STATE_HOME", home / ".local/state")))
+    try:
+        result = migrate(config_home, state_home)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"aero7-migrate: {error}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

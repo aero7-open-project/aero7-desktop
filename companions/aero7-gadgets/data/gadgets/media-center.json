@@ -1,0 +1,1 @@
+{"id":"org.aero7.gadgets.mediacenter","name":"Media Center","version":"1.0","smallSize":[232,166],"largeSize":[310,230],"supportsLargeMode":true,"hasSettings":true,"permissions":["dbus:mpris2","network:album-art"]}

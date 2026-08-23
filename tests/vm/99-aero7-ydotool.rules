@@ -1,0 +1,5 @@
+# VM interaction testing only. ydotoold exposes keyboard, relative-pointer,
+# and mouse-button capabilities through one virtual input device. Some udev
+# versions classify that device only as a keyboard, causing KWin to ignore its
+# otherwise valid BTN_LEFT/BTN_RIGHT events.
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="ydotoold virtual device", ENV{ID_INPUT}="1", ENV{ID_INPUT_KEYBOARD}="1", ENV{ID_INPUT_MOUSE}="1"

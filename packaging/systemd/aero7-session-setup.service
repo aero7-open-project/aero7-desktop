@@ -1,0 +1,14 @@
+[Unit]
+Description=Reconcile the Aero7 shell layout and visual defaults
+After=plasma-plasmashell.service
+Requires=plasma-plasmashell.service
+PartOf=graphical-session.target
+ConditionEnvironment=PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/aero7-desktop/aero7-session-setup
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical-session.target

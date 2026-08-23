@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Aero7 Desktop (Safe Mode)
+Comment=Aero7 desktop with optional effects and extensions disabled
+Exec=/usr/bin/aero7-session --safe-mode
+TryExec=/usr/bin/aero7-session
+Type=Application
+X-KDE-SessionType=wayland
+X-GDM-SessionRegisters=true

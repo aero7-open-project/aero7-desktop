@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+safe_mode=0
+if [[ "${1:-}" == "--safe-mode" ]]; then
+    safe_mode=1
+elif [[ $# -gt 0 ]]; then
+    printf 'Usage: aero7-session [--safe-mode]\n' >&2
+    exit 64
+fi
+
+state_home="${XDG_STATE_HOME:-$HOME/.local/state}/aero7-desktop"
+runtime_home="${XDG_RUNTIME_DIR:-/tmp/aero7-runtime-$UID}/aero7-desktop"
+mkdir -p "$state_home" "$runtime_home"
+chmod 700 "$state_home" "$runtime_home"
+exec >>"$state_home/session.log" 2>&1
+
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+safe_state="$state_home/safe-mode"
+safe_kwin_backup="$safe_state/kwinrc.before-safe"
+safe_kwin_absent="$safe_state/kwinrc.was-absent"
+kwin_config="$config_home/kwinrc"
+
+restore_safe_configuration() {
+    if [[ -f "$safe_kwin_backup" ]]; then
+        install -Dm600 "$safe_kwin_backup" "$kwin_config"
+    elif [[ -f "$safe_kwin_absent" ]]; then
+        rm -f -- "$kwin_config"
+    fi
+    rm -f -- "$safe_kwin_backup" "$safe_kwin_absent"
+}
+
+# A power loss or force-killed display manager may have interrupted a prior
+# Safe Mode session. Restore its exact pre-safe KWin configuration first.
+restore_safe_configuration
+
+printf '%s session start safe_mode=%s pid=%s\n' "$(date --iso-8601=seconds)" "$safe_mode" "$$"
+
+export XDG_SESSION_DESKTOP=Aero7
+export XDG_CURRENT_DESKTOP=Aero7:KDE
+export KDE_SESSION_VERSION=6
+export AERO7_DESKTOP_SESSION=1
+
+# Compatibility contract of the independently packaged AeroThemePlasma
+# workspace. Aero7 owns the session while this shell remains the Phase 1 UI.
+export XDG_CONFIG_DIRS="/etc/xdg/aero7-desktop:/etc/xdg/aerothemeplasma:/etc/xdg${XDG_CONFIG_DIRS:+:$XDG_CONFIG_DIRS}"
+export PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop
+export USE_UAC_AGENT=1
+if command -v kreadconfig6 >/dev/null 2>&1; then
+    QML_DISABLE_DISTANCEFIELD="$(kreadconfig6 --file aerothemeplasmarc --group General --key qmlDisableDistanceField --default 1)"
+    export QML_DISABLE_DISTANCEFIELD
+fi
+
+if (( safe_mode )); then
+    export AERO7_SAFE_MODE=1
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        kwriteconfig6 --file plasmashellrc --group Shell --key ShellPackage io.gitgud.wackyideas.desktop
+    fi
+    printf 'safe\n' >"$runtime_home/mode"
+else
+    unset AERO7_SAFE_MODE || true
+    rm -f -- "$runtime_home/fallback-active"
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        kwriteconfig6 --file plasmashellrc --group Shell --key ShellPackage io.gitgud.wackyideas.desktop
+        if [[ ! -e "$state_home/visual-defaults-v2.applied" ]]; then
+            kwriteconfig6 --file kdeglobals --group Icons --key Theme 'Windows 7 Aero'
+            kwriteconfig6 --file kdeglobals --group Sounds --key Theme Aero7
+            kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme aero-drop
+            kwriteconfig6 --file plasmarc --group Theme --key name Seven-Black
+            kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key library org.smod.smod
+            kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key theme SMOD
+        fi
+    fi
+    printf 'normal\n' >"$runtime_home/mode"
+fi
+
+# Preserve a user's chosen photo, but give a new Aero7 account the existing
+# branded image before SevenStart constructs KUser and its avatar.
+branded_face=/usr/share/aero7-desktop/branding/aero7-user.png
+if [[ ! -e "$HOME/.face.icon" && ! -e "$HOME/.face" && -f "$branded_face" ]]; then
+    install -m 0644 "$branded_face" "$HOME/.face.icon"
+fi
+
+if command -v aero7-migrate >/dev/null 2>&1; then
+    if ! aero7-migrate; then
+        printf '%s migration failed; continuing with preserved configuration\n' "$(date --iso-8601=seconds)"
+    fi
+fi
+
+if (( safe_mode )); then
+    mkdir -p "$safe_state" "$config_home"
+    chmod 700 "$safe_state"
+    if [[ -f "$kwin_config" ]]; then
+        install -m600 "$kwin_config" "$safe_kwin_backup"
+    else
+        : >"$safe_kwin_absent"
+        chmod 600 "$safe_kwin_absent"
+    fi
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        for plugin in aeroglassblur fadingpopupsaero smodglow smodpeekeffect \
+            smodpeekscript libkwin_effect_smodsnap squashaero aero7shake aero7snap; do
+            kwriteconfig6 --file kwinrc --group Plugins --key "${plugin}Enabled" false
+        done
+    fi
+    trap restore_safe_configuration EXIT HUP INT TERM
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user import-environment \
+        XDG_SESSION_DESKTOP XDG_CURRENT_DESKTOP KDE_SESSION_VERSION \
+        AERO7_DESKTOP_SESSION AERO7_SAFE_MODE XDG_CONFIG_DIRS \
+        PLASMA_DEFAULT_SHELL USE_UAC_AGENT QML_DISABLE_DISTANCEFIELD \
+        2>/dev/null || true
+fi
+
+if [[ ! -x /usr/bin/startplasma-wayland ]]; then
+    printf 'Aero7 Desktop requires /usr/bin/startplasma-wayland (plasma-workspace).\n' >&2
+    exit 69
+fi
+
+plasma_session_wrapper=/usr/lib/plasma-dbus-run-session-if-needed
+if [[ -x "$plasma_session_wrapper" ]]; then
+    if (( safe_mode )); then
+        "$plasma_session_wrapper" /usr/bin/startplasma-wayland
+        exit $?
+    fi
+    exec "$plasma_session_wrapper" /usr/bin/startplasma-wayland
+fi
+if (( safe_mode )); then
+    /usr/bin/startplasma-wayland
+    exit $?
+fi
+exec /usr/bin/startplasma-wayland

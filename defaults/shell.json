@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "taskbar": {
+    "running_windows": "all-displays",
+    "shared_pins": true,
+    "show_desktop": true
+  },
+  "start": {
+    "follow_pointer_display": true,
+    "single_instance": true
+  },
+  "recovery": {
+    "crash_window_seconds": 120,
+    "crash_limit": 3
+  }
+}

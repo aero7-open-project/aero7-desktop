@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+reconcile_only=0
+if [[ "${1:-}" == "--reconcile-only" ]]; then
+    reconcile_only=1
+elif [[ $# -gt 0 ]]; then
+    printf 'Usage: aero7-session-setup [--reconcile-only]\n' >&2
+    exit 64
+fi
+
+state_home="${XDG_STATE_HOME:-$HOME/.local/state}/aero7-desktop"
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+layout_script=/usr/share/aero7-desktop/shell/aero7-shell-layout.js
+wallpaper=/usr/share/wallpapers/Aero7/contents/images/1672x941.png
+mkdir -p "$state_home" "$config_home"
+chmod 700 "$state_home"
+
+wait_for_aeroshell() {
+    local attempt shell_name
+    for attempt in {1..60}; do
+        shell_name="$(qdbus6 org.kde.plasmashell /PlasmaShell \
+            org.kde.PlasmaShell.shell 2>/dev/null || true)"
+        if [[ "$shell_name" == io.gitgud.wackyideas.desktop ]]; then
+            return 0
+        fi
+        sleep 0.5
+    done
+    printf 'Aero7 shell did not become ready within 30 seconds.\n' >&2
+    return 1
+}
+
+apply_visual_defaults() {
+    kwriteconfig6 --file kdeglobals --group Icons --key Theme 'Windows 7 Aero'
+    kwriteconfig6 --file kdeglobals --group Sounds --key Theme Aero7
+    kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme aero-drop
+    kwriteconfig6 --file plasmarc --group Theme --key name Seven-Black
+    kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key library org.smod.smod
+    kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key theme SMOD
+
+    qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
+    touch "$state_home/visual-defaults-v2.applied"
+}
+
+apply_wallpaper() {
+    # AeroShell may be restarted before Plasma has serialized its containment
+    # state. Reassert the real Aero7 image on every reconciliation so a shell
+    # recovery can never expose Plasma's black/default wallpaper.
+    if command -v plasma-apply-wallpaperimage >/dev/null 2>&1 && [[ -f "$wallpaper" ]]; then
+        plasma-apply-wallpaperimage "$wallpaper"
+    fi
+}
+
+ensure_kwin_default() {
+    local group="$1" key="$2" value="$3" current
+    current="$(kreadconfig6 --file kwinrc --group "$group" --key "$key" 2>/dev/null || true)"
+    if [[ -z "$current" ]]; then
+        kwriteconfig6 --file kwinrc --group "$group" --key "$key" "$value"
+    fi
+}
+
+ensure_window_management_defaults() {
+    ensure_kwin_default TabBox LayoutName thumbnail_aero
+    ensure_kwin_default TabBoxAlternative LayoutName flip3d
+    ensure_kwin_default Plugins aeroglassblurEnabled true
+    ensure_kwin_default Plugins libkwin_effect_smodsnapEnabled true
+    ensure_kwin_default Plugins smodpeekscriptEnabled true
+    ensure_kwin_default Plugins aero7shakeEnabled true
+    ensure_kwin_default Plugins aero7snapEnabled true
+    qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
+}
+
+wait_for_aeroshell
+
+# Units from the rejected overlay architecture may still be active during an
+# in-place package upgrade. Stop them explicitly; the AeroShell panel and
+# containment are the sole visible normal-session shell.
+systemctl --user stop \
+    aero7-desktop-surface.service aero7-taskbar.service aero7-start.service \
+    aero7-tray.service aero7-notify.service 2>/dev/null || true
+
+qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript \
+    "$(<"$layout_script")" >/dev/null
+
+apply_wallpaper
+ensure_window_management_defaults
+
+if (( ! reconcile_only )) && [[ ! -e "$state_home/visual-defaults-v2.applied" ]]; then
+    apply_visual_defaults
+fi
+
+printf 'Aero7 shell layout and visual defaults are ready.\n'

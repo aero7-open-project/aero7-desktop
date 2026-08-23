@@ -1,0 +1,1 @@
+{"id":"org.aero7.gadgets.weather","name":"Weather","version":"1.0","smallSize":[126,82],"largeSize":[270,185],"supportsLargeMode":true,"hasSettings":true,"permissions":["network:https://api.open-meteo.com","network:https://geocoding-api.open-meteo.com"]}

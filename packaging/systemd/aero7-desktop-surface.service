@@ -1,0 +1,16 @@
+[Unit]
+Description=Aero7 desktop surface
+StartLimitIntervalSec=30s
+StartLimitBurst=5
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/aero7-desktop-surface
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=5s
+
+[Install]
+WantedBy=graphical-session.target

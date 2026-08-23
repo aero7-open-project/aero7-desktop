@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Aero7 Desktop Gadgets
+Comment=Restore desktop gadget instances
+Exec=aero7-gadget-host
+Icon=preferences-desktop-widgets
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2
+X-KDE-StartupNotify=false
+NoDisplay=true

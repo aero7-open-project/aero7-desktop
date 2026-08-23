@@ -1,0 +1,1 @@
+{"id":"org.aero7.gadgets.cpu","name":"CPU Meter","version":"1.0","smallSize":[132,98],"largeSize":[260,150],"supportsLargeMode":true,"hasSettings":false,"permissions":["procfs:stat","procfs:meminfo"]}

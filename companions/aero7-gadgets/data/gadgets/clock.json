@@ -1,0 +1,1 @@
+{"id":"org.aero7.gadgets.clock","name":"Clock","version":"1.0","smallSize":[132,132],"largeSize":[240,240],"supportsLargeMode":true,"hasSettings":true,"permissions":["clock","timezone"]}

@@ -1,0 +1,1 @@
+{"id":"org.aero7.gadgets.picturepuzzle","name":"Picture Puzzle","version":"1.0","smallSize":[126,126],"largeSize":[250,250],"supportsLargeMode":true,"hasSettings":true,"permissions":["filesystem:user-selected-image"]}

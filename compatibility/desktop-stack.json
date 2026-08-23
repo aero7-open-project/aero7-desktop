@@ -1,0 +1,57 @@
+{
+  "schema": 2,
+  "aero7_desktop_version": "0.2.0",
+  "package_version": "0.2.0-12",
+  "platform": "Arch Linux x86_64",
+  "session": "Wayland",
+  "tested_stack": {
+    "kernel": "7.1.8-arch1-3",
+    "plasma_workspace": "6.7.4-1",
+    "kwin": "6.7.4-5",
+    "kde_frameworks": "6.28.0-1",
+    "qt": "6.11.1-1",
+    "wayland": "1.26.0-1"
+  },
+  "known_compatible_aero_packages": {
+    "aero7-file-explorer": "25.12.3-30",
+    "aero7-gadgets": "3.0.0-1",
+    "aerothemeplasma-desktop-git": "6.7.0_742.r9c2d850-34",
+    "aerothemeplasma-icons-git": "11.r96950b8-2",
+    "aeroshell-smod-git": "6.7.0_47.rd15bbd1-1",
+    "linux-control-panel": "0.1.0-23",
+    "linux-devmgmt": "2.2.1-1",
+    "aero7-computer-management-git": "0.2.0.r19.ga29afe0-1"
+  },
+  "tested_at": "2026-08-23T13:50:42Z",
+  "results": {
+    "source_build_and_ctest": "PASS",
+    "arch_package_build": "PASS",
+    "repository_update_audit": "PASS_NO_UPDATES_PENDING",
+    "clean_vm_install": "PASS",
+    "normal_session_reboot": "PASS",
+    "safe_mode_reboot": "PASS",
+    "exact_aeroshell_layout": "PASS",
+    "start_and_shell_interactions": "PASS",
+    "nested_three_monitor_matrix": "PASS",
+    "native_display_drag_apply_revert": "PASS",
+    "control_panel": "PASS",
+    "file_explorer": "PASS_EXCEPT_NO_PHYSICAL_USB_ATTACHED",
+    "kwin_behaviors": "PASS",
+    "component_recovery": "PASS",
+    "failure_injection": "PASS",
+    "upgrade_reinstall_uninstall": "PASS",
+    "automated_visual_capture": "PASS",
+    "clean_boot_aero_warning_audit": "PASS",
+    "current_parity_package_smoke": "PASS_R30_R23_R34",
+    "gadgets_3_source_self_test": "PASS_9_BUILTINS",
+    "physical_hardware": "NOT_RUN"
+  },
+  "approval": "VM_VALIDATED_DEVELOPMENT_STACK",
+  "notes": [
+    "AeroShell is the sole visible desktop shell; no stock-panel fallback is used.",
+    "The final clean boot has no failed user services and no warning that directly identifies an Aero7 component.",
+    "Plasma 6.7 emits a non-fatal empty-dialog timing diagnostic when the visibly populated SevenStart menu opens.",
+    "A real USB device and physical GPU/mixed-monitor hardware were not available.",
+    "The current parity package smoke used File Explorer r30, Control Panel r23, and AeroShell r34; broader hardware and failure-path certification remains pending."
+  ]
+}

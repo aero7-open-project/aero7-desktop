@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Desktop Gadgets
+Comment=Add Aero7 gadgets to the desktop
+Exec=aero7-gadget-host --gallery
+Icon=preferences-desktop-widgets
+Categories=Settings;DesktopSettings;
+StartupNotify=true
+X-KDE-StartupNotify=true

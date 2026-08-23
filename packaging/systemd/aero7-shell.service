@@ -1,0 +1,16 @@
+[Unit]
+Description=Aero7 shell health and recovery service
+Documentation=file:///usr/share/doc/aero7-desktop/RECOVERY.md
+After=graphical-session.target aero7-session-setup.service
+Wants=aero7-session-setup.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/aero7-desktop/aero7-shell-service
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=5s
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+"""Health and layout supervision for the visible AeroShell session."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import shutil
+import signal
+import subprocess
+import time
+
+REQUIRED_BINARIES = ("kwin_wayland", "plasmashell", "qdbus6", "control")
+INTEGRATION_BINARIES = {
+    "control-panel": ("control",),
+    "device-manager": ("aero7-device-manager", "devmgmt"),
+    "computer-management": ("aero7-compmgmt", "aero7-computer-management"),
+    "programs-center": ("aero7-programs-center",),
+    "file-explorer": ("aero7-file-explorer",),
+}
+EXPECTED_SHELL = "io.gitgud.wackyideas.desktop"
+EXPECTED_PANEL = "io.gitgud.wackyideas.panel"
+EXPECTED_DESKTOP = "io.gitgud.wackyideas.desktopcontainment"
+LAYOUT_QUERY = r'''
+var ps = panels();
+var ds = desktops();
+var panelTypes = [];
+var desktopTypes = [];
+for (var p = 0; p < ps.length; ++p) panelTypes.push(ps[p].type);
+for (var d = 0; d < ds.length; ++d) desktopTypes.push(ds[d].type);
+print(JSON.stringify({
+    panels: ps.length,
+    screens: screenCount,
+    panelTypes: panelTypes,
+    desktops: ds.length,
+    desktopTypes: desktopTypes
+}));
+'''
+
+
+def iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def atomic_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".new")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.chmod(temporary, 0o600)
+    temporary.replace(path)
+
+
+def process_running(name: str) -> bool:
+    result = subprocess.run(
+        ("pgrep", "-x", name),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def user_unit_state(unit: str) -> dict:
+    result = subprocess.run(
+        (
+            "systemctl", "--user", "show", unit,
+            "--property=ActiveState", "--property=SubState",
+            "--property=Result", "--property=NRestarts",
+        ),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    values = {}
+    for line in result.stdout.splitlines():
+        key, _, value = line.partition("=")
+        values[key] = value
+    return {
+        "active": values.get("ActiveState", "unknown"),
+        "substate": values.get("SubState", "unknown"),
+        "result": values.get("Result", "unknown"),
+        "restarts": int(values.get("NRestarts", "0") or 0),
+    }
+
+
+def shell_name() -> str:
+    result = subprocess.run(
+        ("qdbus6", "org.kde.plasmashell", "/PlasmaShell", "org.kde.PlasmaShell.shell"),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def layout_state() -> dict:
+    result = subprocess.run(
+        (
+            "qdbus6", "org.kde.plasmashell", "/PlasmaShell",
+            "org.kde.PlasmaShell.evaluateScript", LAYOUT_QUERY,
+        ),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode != 0:
+        return {"ready": False}
+    try:
+        state = json.loads(result.stdout.strip())
+    except json.JSONDecodeError:
+        return {"ready": False, "error": "invalid layout response"}
+    state["ready"] = True
+    state["valid"] = (
+        state.get("panels") == max(1, state.get("screens", 0))
+        and all(kind == EXPECTED_PANEL for kind in state.get("panelTypes", []))
+        and state.get("desktops", 0) >= max(1, state.get("screens", 0))
+        and all(kind == EXPECTED_DESKTOP for kind in state.get("desktopTypes", []))
+    )
+    return state
+
+
+def reconcile_layout() -> bool:
+    helper = "/usr/lib/aero7-desktop/aero7-session-setup"
+    if not os.access(helper, os.X_OK):
+        return False
+    result = subprocess.run(
+        (helper, "--reconcile-only"),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+        timeout=40,
+    )
+    return result.returncode == 0
+
+
+def report_shell_failure(state_root: Path, reason: str) -> None:
+    atomic_json(
+        state_root / "recovery.json",
+        {
+            "schema": 2,
+            "activated_at": iso_now(),
+            "failed_component": "AeroShell",
+            "reason": reason,
+            "fallback": "none; stock Plasma panels are forbidden in the normal session",
+        },
+    )
+    if shutil.which("aero7-recovery-ui"):
+        subprocess.Popen(
+            ("aero7-recovery-ui", "--component", "AeroShell"),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+
+
+def restart_aeroshell() -> bool:
+    commands = (
+        ("systemctl", "--user", "set-environment", f"PLASMA_DEFAULT_SHELL={EXPECTED_SHELL}"),
+        ("systemctl", "--user", "reset-failed", "plasma-plasmashell.service"),
+        ("systemctl", "--user", "restart", "plasma-plasmashell.service"),
+    )
+    return all(subprocess.run(command, check=False).returncode == 0 for command in commands)
+
+
+def snapshot() -> dict:
+    return {
+        "schema": 2,
+        "updated_at": iso_now(),
+        "session": os.environ.get("XDG_SESSION_DESKTOP", "unknown"),
+        "safe_mode": os.environ.get("AERO7_SAFE_MODE") == "1",
+        "visible_shell": shell_name(),
+        "binaries": {name: shutil.which(name) is not None for name in REQUIRED_BINARIES},
+        "integrations": {
+            name: any(shutil.which(candidate) is not None for candidate in candidates)
+            for name, candidates in INTEGRATION_BINARIES.items()
+        },
+        "processes": {
+            "kwin_wayland": process_running("kwin_wayland"),
+            "plasmashell": process_running("plasmashell"),
+        },
+        "plasmashell_unit": user_unit_state("plasma-plasmashell.service"),
+        "layout": layout_state(),
+        "stock_fallback_allowed": False,
+    }
+
+
+def main() -> int:
+    state_root = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "aero7-desktop"
+    state_root.mkdir(parents=True, exist_ok=True)
+    os.chmod(state_root, 0o700)
+    log_path = state_root / "session.log"
+    health_path = state_root / "health.json"
+    interval = max(2.0, float(os.environ.get("AERO7_HEALTH_INTERVAL", "15")))
+    running = True
+    last_restart = 0.0
+
+    def stop(_signum: int, _frame: object) -> None:
+        nonlocal running
+        running = False
+
+    signal.signal(signal.SIGINT, stop)
+    signal.signal(signal.SIGTERM, stop)
+
+    with log_path.open("a", encoding="utf-8") as log:
+        log.write(f"{iso_now()} AeroShell health service started pid={os.getpid()}\n")
+        log.flush()
+        while running:
+            current = snapshot()
+            unit = current["plasmashell_unit"]
+            shell_failed = (
+                unit["active"] == "failed"
+                or not current["processes"]["plasmashell"]
+                or (current["visible_shell"] and current["visible_shell"] != EXPECTED_SHELL)
+            )
+
+            if shell_failed and os.environ.get("AERO7_SAFE_MODE") != "1":
+                now = time.monotonic()
+                if now - last_restart >= 60:
+                    last_restart = now
+                    if restart_aeroshell():
+                        log.write(f"{iso_now()} restarted the AeroShell package\n")
+                    else:
+                        report_shell_failure(state_root, "AeroShell could not be restarted")
+                        log.write(f"{iso_now()} AeroShell restart failed\n")
+                    log.flush()
+                    time.sleep(3)
+                    current = snapshot()
+
+            if current.get("visible_shell") == EXPECTED_SHELL:
+                layout = current.get("layout", {})
+                if not layout.get("valid", False):
+                    if reconcile_layout():
+                        current = snapshot()
+                        log.write(f"{iso_now()} reconciled Aero panels after layout/output change\n")
+                        log.flush()
+
+            atomic_json(health_path, current)
+            deadline = time.monotonic() + interval
+            while running and time.monotonic() < deadline:
+                time.sleep(min(0.25, deadline - time.monotonic()))
+
+        log.write(f"{iso_now()} AeroShell health service stopped\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

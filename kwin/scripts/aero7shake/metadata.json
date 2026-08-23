@@ -1,0 +1,19 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Aero7 Desktop contributors"
+            }
+        ],
+        "Description": "Windows 7-style Aero Shake window minimization and restore",
+        "EnabledByDefault": true,
+        "Icon": "preferences-system-windows",
+        "Id": "aero7shake",
+        "License": "GPL-3.0-or-later",
+        "Name": "Aero7 Shake",
+        "Version": "0.2.0"
+    },
+  "X-Plasma-API": "javascript",
+  "X-Plasma-MainScript": "code/main.js"
+}

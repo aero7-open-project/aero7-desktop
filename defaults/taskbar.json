@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "pins": [
+    "applications:org.aero7.fileexplorer.desktop",
+    "applications:linux-controlpanel.desktop",
+    "applications:qterminal.desktop"
+  ]
+}

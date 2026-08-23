@@ -1,0 +1,11 @@
+#!/bin/sh
+if [ "$1" = "--json" ]; then
+    cat <<'EOF'
+{"outputs":[
+ {"name":"Virtual-1","connected":true,"enabled":true,"priority":1,"currentModeId":"1","scale":1,"rotation":1,"pos":{"x":0,"y":0},"modes":[{"id":"1","name":"1920x1080","size":{"width":1920,"height":1080},"refreshRate":60}]},
+ {"name":"Virtual-2","connected":true,"enabled":true,"priority":2,"currentModeId":"2","scale":1,"rotation":1,"pos":{"x":1920,"y":0},"modes":[{"id":"2","name":"1920x1080","size":{"width":1920,"height":1080},"refreshRate":60}]}
+]}
+EOF
+    exit 0
+fi
+printf '%s\n' "$*" >> "${AERO7_KSCREEN_LOG:-/tmp/aero7-kscreen-doctor.log}"

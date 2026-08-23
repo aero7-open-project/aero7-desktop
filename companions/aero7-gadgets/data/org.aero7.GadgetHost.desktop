@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Desktop Gadgets
+Comment=Aero7 native desktop gadget runtime
+Exec=aero7-gadget-host --gallery
+Icon=preferences-desktop-widgets
+Categories=Settings;DesktopSettings;
+NoDisplay=true
+StartupNotify=false

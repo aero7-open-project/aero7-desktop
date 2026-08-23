@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Aero7 Taskbar
+Comment=Synchronized Aero7 taskbar for every monitor
+Exec=/usr/bin/aero7-taskbar
+Icon=preferences-desktop-icons
+Terminal=false
+NoDisplay=true
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,org_kde_plasma_activation_feedback,zkde_screencast_unstable_v1

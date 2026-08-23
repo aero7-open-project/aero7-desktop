@@ -1,0 +1,1 @@
+{"id":"org.aero7.gadgets.currency","name":"Currency","version":"1.0","smallSize":[126,80],"largeSize":[252,130],"supportsLargeMode":true,"hasSettings":true,"permissions":["network:https://api.frankfurter.app"]}

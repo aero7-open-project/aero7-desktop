@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Aero7 Visual Test Capture
+Exec=/usr/lib/aero7-desktop/aero7-screenshot-test --delay-ms 3000
+NoDisplay=true
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2

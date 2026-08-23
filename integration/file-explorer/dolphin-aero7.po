@@ -1,0 +1,12 @@
+# Aero7 product-name overlay for the upstream Dolphin translation domain.
+# SPDX-License-Identifier: MIT
+msgid ""
+msgstr ""
+"Project-Id-Version: aero7-desktop 0.2.0\n"
+"Language: aero7\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Dolphin"
+msgstr "File Explorer"

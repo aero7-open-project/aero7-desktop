@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "pins": [
+    "org.aero7.fileexplorer.desktop",
+    "org.aero7.controlpanel.desktop",
+    "qterminal.desktop"
+  ],
+  "recent": []
+}
