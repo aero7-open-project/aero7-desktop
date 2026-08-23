@@ -13,7 +13,15 @@ shellcheck --severity=error "${shell_files[@]}" \
     shell/session/aero7-session
 
 mapfile -t qml_files < <(find shell -type f -name '*.qml' -print | sort)
-qmllint "${qml_files[@]}"
+qmllint_binary="$(command -v qmllint || true)"
+if [[ -z "$qmllint_binary" && -x /usr/lib/qt6/bin/qmllint ]]; then
+    qmllint_binary=/usr/lib/qt6/bin/qmllint
+fi
+[[ -n "$qmllint_binary" ]] || {
+    printf 'qmllint was not found in PATH or /usr/lib/qt6/bin.\n' >&2
+    exit 1
+}
+"$qmllint_binary" "${qml_files[@]}"
 
 node --check kwin/scripts/aero7shake/contents/code/main.js
 node --check kwin/scripts/aero7snap/contents/code/main.js

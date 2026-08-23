@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install build and validation dependencies
         run: >-
           pacman -Syu --noconfirm
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install package build dependencies
         run: >-
           pacman -Syu --noconfirm
@@ -58,7 +58,9 @@ jobs:
           package_root=/tmp/aero7-package-ci
           mkdir -p "$package_root"
           cp packaging/arch/PKGBUILD "$package_root/PKGBUILD"
-          git archive --format=tar.gz --prefix=aero7-desktop-0.2.0/ -o "$package_root/aero7-desktop-0.2.0.tar.gz" HEAD
+          bsdtar -czf "$package_root/aero7-desktop-0.2.0.tar.gz" \
+            -s '|^\./|aero7-desktop-0.2.0/|' \
+            --exclude .git --exclude build --exclude dist --exclude artifacts .
           chown -R builder:builder "$package_root"
           su builder -c "cd '$package_root' && makepkg --nodeps --noconfirm"
           test -n "$(find "$package_root" -maxdepth 1 -name 'aero7-desktop-*.pkg.tar.zst' -print -quit)"
