@@ -1,76 +1,157 @@
+<a id="readme-top"></a>
+
+<div align="center">
+
+<img src="assets/branding/aero7-logo-circle.png" width="150" alt="Aero7 logo">
+
 # Aero7 Desktop
 
-Aero7 Desktop is the user-facing desktop environment for Aero7. It uses
-modern Linux, Wayland, KWin, KDE Frameworks, and the reused AeroShell desktop
-package underneath while providing a Windows 7-inspired Aero7 session.
+### A familiar Windows 7-inspired desktop for modern Linux
 
-The 0.2 development line provides dedicated normal and safe-mode sessions,
-one AeroShell panel per monitor, SevenStart, SevenTasks, Aero tray/clock,
-Windows 7-inspired KWin behavior, the real separately maintained Aero7
-Control Panel, recovery, Aero7 File Explorer integration, and the native
-Desktop Gadgets runtime.
-KWin, KScreen, KIO, NetworkManager, PipeWire, UPower, Solid, and standard MIME
-associations remain the real backends.
+A complete Aero7 Wayland session with an Aero taskbar, Start menu, desktop,
+Control Panel, File Explorer, notifications, recovery tools, and Desktop
+Gadgets, backed by current Linux and KDE infrastructure.
 
-This repository was created independently. It does not import or execute the
-retired desktop installer and contains no Microsoft binaries.
+[![Arch Linux](https://img.shields.io/badge/Arch_Linux-supported-1793D1?logo=archlinux&logoColor=white)](https://archlinux.org/)
+[![Wayland](https://img.shields.io/badge/Wayland-default-FFBC00?logo=wayland&logoColor=black)](https://wayland.freedesktop.org/)
+[![KDE Plasma](https://img.shields.io/badge/KDE_Plasma-6-1D99F3?logo=kde&logoColor=white)](https://kde.org/plasma-desktop/)
+[![MIT License](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
 
-## Included Desktop Gadgets
+[Features](#features) ·
+[Documentation](https://github.com/aero7-open-project/aero7-desktop/wiki) ·
+[Installation](#installation-and-updates) ·
+[Status](#project-status) ·
+[Report a bug](https://github.com/aero7-open-project/aero7-desktop/issues/new)
 
-The complete Aero7 Desktop Gadgets 3.0 source is included under
-[`companions/aero7-gadgets`](companions/aero7-gadgets). It provides the
-Windows 7-style gallery, login restoration, multi-monitor placement and nine
-built-ins: Calendar, Clock, CPU Meter, Currency, Feed Headlines, Picture
-Puzzle, Slide Show, Weather and Media Center. The Arch desktop package requires
-the separately built `aero7-gadgets` package, so a normal Aero7 installation
-does not silently omit the gadget subsystem.
+</div>
 
-The gadget artwork is drawn by original Aero7 code. No Microsoft gadget
-resources are redistributed.
+---
 
-## Build and test
+**Aero7 Desktop is an independent project and is not affiliated with or
+endorsed by Microsoft Corporation. Windows is a trademark of the Microsoft
+group of companies.**
 
-On the tested Arch stack:
+> [!IMPORTANT]
+> Aero7 Desktop is beta software. It is intended for Aero7 testing systems and
+> should not yet be treated as a physical-hardware production certification.
+
+## About the project
+
+Aero7 Desktop is the user-facing desktop environment for
+[Aero7](https://github.com/aero7-open-project/aero7). It recreates the familiar
+layout and interaction model of Windows 7 while remaining a native Linux
+desktop. KWin, KDE Frameworks, KIO, NetworkManager, PipeWire, UPower, Solid,
+and standard Linux services provide the real system backends.
+
+KDE and Plasma technology remains infrastructure underneath the session. The
+normal user-facing routes open Aero7 applications such as Control Panel and
+File Explorer instead of exposing a second competing desktop interface.
+
+## Features
+
+- Dedicated **Aero7 Desktop** Wayland session and a recoverable **Safe Mode**
+- Windows 7-inspired desktop, glass taskbar, Start orb, Start menu, search,
+  notification area, clock, and Show Desktop button
+- Grouped taskbar windows, live previews, jump lists, Peek, Snap, Shake, and
+  familiar window switching
+- One synchronized Aero7 taskbar and desktop per connected display
+- Aero7 Control Panel with native Linux-backed settings and system tools
+- Maintained Aero7 File Explorer with Libraries, Computer, Network, Recycle
+  Bin, common dialogs, and KIO-backed file operations
+- Aero7 Desktop Gadgets gallery with Calendar, Clock, CPU Meter, Currency,
+  Feed Headlines, Picture Puzzle, Slide Show, Weather, and Media Center
+- Native notifications, network/audio/power status, wallpaper and theme
+  defaults, migration, shell health supervision, and recovery tools
+- Existing user settings are migrated non-destructively with dated backups
+
+Unavailable functions are disabled or documented when a correct Linux backend
+does not exist. Aero7 does not present decorative controls as working system
+features.
+
+## Included desktop components
+
+| Component | Purpose |
+| --- | --- |
+| Aero7 session | Starts the normal or safe Wayland desktop |
+| Aero desktop and taskbar | Desktop icons, Start, grouped tasks, tray, clock, and Show Desktop |
+| Aero7 Control Panel | Familiar settings and system-management routes |
+| Aero7 File Explorer | Files, Libraries, Computer, Network, and common dialogs |
+| Aero7 Desktop Gadgets | Gallery, persistence, multi-monitor placement, and nine built-ins |
+| Aero7 recovery | Status, logs, same-shell restart, safe reset, and recovery UI |
+
+The desktop package brings these maintained components together as one tested
+Aero7 session. It does not install duplicate taskbars, Start menus, trays, or
+settings applications.
+
+## Installation and updates
+
+Aero7 Desktop is maintained as the `aero7-desktop` package in the official
+[Aero7 Package Repository](https://github.com/memegeko/aero7-repo). The package
+recipe is available on that repository's `beta` branch and is updated with the
+rest of the Aero7 desktop stack.
+
+After the beta package set containing Aero7 Desktop has been published, a
+system with the Aero7 repository configured can install or update it with:
 
 ```bash
-tests/run.sh
+sudo pacman -Syu aero7-desktop
 ```
 
-This performs shell/static validation, QML validation, the C++ build, unit
-tests, backend/service tests, migration tests, and session-artifact tests. A
-staged install can be made with:
+During a beta publication freeze, the signed pacman endpoint can temporarily
+lag behind the package recipes. See
+[Installation and Updates](https://github.com/aero7-open-project/aero7-desktop/wiki/Installation-and-Updates)
+for repository verification, session selection, and removal guidance.
 
-```bash
-DESTDIR="$PWD/stage" cmake --install build
-```
+## Documentation
 
-The included gadget runtime is validated separately:
+| Topic | Wiki page |
+| --- | --- |
+| Desktop, taskbar, Start, and window behavior | [Desktop User Guide](https://github.com/aero7-open-project/aero7-desktop/wiki/Desktop-User-Guide) |
+| Included applications and system tools | [Included Components](https://github.com/aero7-open-project/aero7-desktop/wiki/Included-Components) |
+| Displays and synchronized multi-monitor behavior | [Displays and Multi-Monitor](https://github.com/aero7-open-project/aero7-desktop/wiki/Displays-and-Multi-Monitor) |
+| Safe Mode, backups, and shell repair | [Safe Mode and Recovery](https://github.com/aero7-open-project/aero7-desktop/wiki/Safe-Mode-and-Recovery) |
+| Current beta limitations | [Known Issues](https://github.com/aero7-open-project/aero7-desktop/wiki/Known-Issues) |
+| Common problems and useful report details | [Troubleshooting](https://github.com/aero7-open-project/aero7-desktop/wiki/Troubleshooting) |
 
-```bash
-cmake -S companions/aero7-gadgets -B gadgets-build -G Ninja -DBUILD_TESTING=ON
-cmake --build gadgets-build
-QT_QPA_PLATFORM=offscreen ctest --test-dir gadgets-build --output-on-failure
-```
+The versioned wiki source is kept in [`wiki/`](wiki) and synchronized to the
+GitHub Wiki from the `beta` branch.
 
-The full graphical and package lifecycle is run in the Arch validation VM:
+## Project status
 
-```bash
-AERO7_SSH_KEY=/path/to/key tests/vm/deploy.sh aero@localhost 2222
-```
+The current 0.2 beta line has been validated in an Arch/Plasma virtual machine
+for package installation, clean login, Start and taskbar interaction, Control
+Panel, File Explorer, Gadgets, recovery, upgrade, reinstall, uninstall, and a
+nested multi-monitor session.
 
-See [VM testing](docs/VM-TESTING.md), [recovery](docs/RECOVERY.md), and the
-[validation record](docs/FINAL-VALIDATION.md) before promoting a stack.
+Physical GPU, USB, suspend/resume, mixed-DPI, real connector hotplug, and broad
+hardware combinations still require testing. VM validation is useful release
+evidence, but it is not a substitute for physical-hardware acceptance.
 
-## Status
+## Related Aero7 projects
 
-The pinned Arch/Plasma VM stack is validated through installation, clean login,
-safe mode, AeroShell, nested three-monitor, KWin, Control Panel, recovery,
-upgrade, reinstall, and uninstall automation. KWin's authorized screenshot
-interface also produced inspectable visual evidence for the desktop, Start,
-Control Panel, File Explorer, grouped tasks, Peek, and notifications. Physical
-USB/GPU/multi-monitor hardware remains outside the available VM, so 0.2 is a
-validated development stack rather than a physical-hardware production
-certification.
+- [Aero7](https://github.com/aero7-open-project/aero7) — operating system and ISO
+- [Aero7 File Explorer](https://github.com/aero7-open-project/aero7-file-explorer) — maintained Dolphin-based file manager
+- [Aero7 Control Panel](https://github.com/aero7-open-project/aero7-control-panel-) — settings and configuration
+- [Aero7 Package Repository](https://github.com/memegeko/aero7-repo) — signed packages and updates
 
-Aero7 is an independent open-source project. It is not affiliated with or
-endorsed by Microsoft Corporation and does not contain Microsoft Windows.
+## License
+
+Aero7 Desktop is distributed under the [MIT License](LICENSE). Maintained
+dependencies, companion projects, and third-party assets retain their own
+licenses; see [THIRD_PARTY.md](THIRD_PARTY.md).
+
+No Microsoft binaries, Windows system files, or proprietary Microsoft artwork
+are included.
+
+## Legal / Trademark Notice
+
+Aero7 Desktop is an independent open-source project and is not affiliated
+with, authorized, sponsored, endorsed, or approved by Microsoft Corporation.
+
+Microsoft and Windows are trademarks of the Microsoft group of companies. All
+other trademarks are the property of their respective owners.
+
+This project recreates interface concepts using original and freely licensed
+software and artwork.
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
