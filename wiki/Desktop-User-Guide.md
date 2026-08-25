@@ -22,6 +22,12 @@ same application are grouped, with previews and jump-list actions where the
 application provides them. The notification area contains application status,
 network, audio, power, hidden icons, clock/date, and Show Desktop.
 
+The permanent Internet Explorer pin opens the selected modern browser without
+changing its Aero7 taskbar identity. Its jump list includes new-window and
+InPrivate actions. Changing the browser backend does not require repinning, and
+browser startup remains one taskbar tile rather than showing a temporary
+duplicate.
+
 ## Windows
 
 Aero7 uses KWin Wayland for real window management:

@@ -40,6 +40,12 @@ jobs:
           DESTDIR="$PWD/gadgets-stage" cmake --install gadgets-build
           test -x gadgets-stage/usr/bin/aero7-gadget-host
           test -L gadgets-stage/usr/bin/aero7-gadget-gallery
+      - name: Build and test the included Internet Explorer compatibility component
+        run: |
+          cmake -S companions/aero7-internet-explorer -B internet-explorer-build -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=ON -DAERO7_IE_BUILD_UI=OFF
+          cmake --build internet-explorer-build
+          QT_QPA_PLATFORM=offscreen ctest --test-dir internet-explorer-build --output-on-failure
 
   arch-package:
     runs-on: ubuntu-latest

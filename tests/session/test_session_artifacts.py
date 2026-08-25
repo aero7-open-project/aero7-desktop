@@ -44,6 +44,27 @@ class SessionArtifactsTest(unittest.TestCase):
         self.assertIn("/usr/bin/dolphin", wrapper)
         self.assertIn("LANGUAGE", wrapper)
 
+    def test_new_sessions_pin_the_permanent_internet_explorer_identity(self):
+        layout = (ROOT / "services/session/aero7-shell-layout.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            '"applications:aero7-internet-explorer.desktop"', layout
+        )
+        self.assertIn("canonicalLaunchers = savedLaunchers", layout)
+        self.assertIn("internetExplorerPinMigrated", layout)
+        self.assertIn("canonicalLaunchers.unshift(internetExplorerLauncher)", layout)
+        package = (ROOT / "packaging/arch/PKGBUILD").read_text(encoding="utf-8")
+        self.assertIn("'aero7-internet-explorer'", package)
+        companion = ROOT / "companions/aero7-internet-explorer"
+        self.assertTrue((companion / "src/InternetExplorer.cpp").is_file())
+        desktop = self.read_desktop_path(
+            companion / "data/aero7-internet-explorer.desktop"
+        )
+        self.assertEqual(desktop["Name"], "Internet Explorer")
+        self.assertEqual(desktop["Exec"], "aero7-internet-explorer %U")
+        self.assertEqual(desktop["StartupNotify"], "false")
+
     def test_atpootb_is_limited_to_the_aero_compatibility_shell(self):
         dropin = (
             ROOT

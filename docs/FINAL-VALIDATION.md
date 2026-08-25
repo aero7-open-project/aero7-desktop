@@ -7,13 +7,18 @@ evidence is not misrepresented as a new hardware or failure-path certification.
 
 ## Publication-readiness refresh
 
-- Aero7 Desktop `0.2.0-12` configures, builds, passes all four CTest suites and
+- Aero7 Desktop `0.2.0-13` configures, builds, passes all four CTest suites and
   produces a complete staged `/usr` installation from a clean build directory.
 - The included Aero7 Desktop Gadgets 3.0 runtime builds independently, passes
   its nine-definition persistence/metadata self-test and produces the host,
   gallery alias, autostart entry and nine manifests in a staged installation.
 - The required current parity stack is File Explorer `25.12.3-30`, Control
-  Panel `0.1.0-23`, AeroShell `6.7.0_742.r9c2d850-34` and Gadgets `3.0.0-1`.
+  Panel `0.1.0-23`, AeroShell `6.7.0_742.r9c2d850-35`, Gadgets `3.0.0-1`, and
+  Internet Explorer compatibility `0.1.0-3`.
+- Internet Explorer compatibility passed its source and desktop-entry tests,
+  its full guest compatibility suite, Firefox/Chromium delegation checks, and
+  a packaged 56-frame startup trace without a duplicate taskbar tile. Wayland
+  activation remained present on the real taskbar launch.
 - The r30/r23/r34 desktop stack passed a clean-login/reboot smoke test on
   2026-08-23. Gadgets 3.0 still needs a new live-session interaction pass; its
   source/build/self-test is verified here without claiming that missing test.

@@ -1,0 +1,37 @@
+[Desktop Entry]
+Type=Application
+Name=Internet Explorer
+GenericName=Web Browser
+Comment=Browse the Internet
+Exec=aero7-internet-explorer %U
+Icon=aero7-internet-explorer
+Terminal=false
+Categories=Network;WebBrowser;
+Keywords=internet;internet explorer;browser;web;IE;
+MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+# The selected browser owns startup feedback. A second wrapper startup task
+# briefly creates a duplicate Internet Explorer tile beside the permanent pin.
+StartupNotify=false
+StartupWMClass=aero7-internet-explorer
+Actions=NewWindow;InPrivate;Settings;DesktopShortcut;
+X-Aero7-CompatibilityLauncher=true
+
+[Desktop Action NewWindow]
+Name=Open new window
+Exec=aero7-internet-explorer --new-window
+Icon=aero7-internet-explorer
+
+[Desktop Action InPrivate]
+Name=Start InPrivate Browsing
+Exec=aero7-internet-explorer --private
+Icon=view-private
+
+[Desktop Action Settings]
+Name=Internet Explorer settings
+Exec=aero7-internet-explorer --settings
+Icon=preferences-system
+
+[Desktop Action DesktopShortcut]
+Name=Create desktop shortcut
+Exec=aero7-internet-explorer --create-desktop-shortcut
+Icon=user-desktop

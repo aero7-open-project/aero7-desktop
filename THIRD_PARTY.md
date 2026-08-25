@@ -14,3 +14,8 @@ The complete MIT-licensed Aero7 Desktop Gadgets 3.0 source is included in
 before being consolidated here. Its host, gallery, persistence, networking and
 painted artwork are original Aero7 implementations; no Microsoft resources are
 used.
+
+The complete MIT-licensed Aero7 Internet Explorer compatibility source is
+included in `companions/aero7-internet-explorer`. It supplies an original
+Aero7 launcher, icon set, backend-selection library, tests, and documentation;
+it does not contain Microsoft Internet Explorer code, binaries, or artwork.

@@ -1,6 +1,6 @@
 pkgname=aero7-desktop
 pkgver=0.2.0
-pkgrel=12
+pkgrel=13
 pkgdesc="Aero7-owned Wayland desktop session and shell integration"
 arch=('x86_64')
 options=('!debug')
@@ -17,6 +17,7 @@ depends=(
   'pipewire-pulse'
   'aero7-file-explorer'
   'aero7-gadgets'
+  'aero7-internet-explorer'
   'ark'
   'aerothemeplasma-desktop'
   'linux-control-panel'

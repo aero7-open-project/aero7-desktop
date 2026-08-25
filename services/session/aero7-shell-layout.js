@@ -8,7 +8,9 @@ var tasksType = "io.gitgud.wackyideas.seventasks";
 var trayType = "io.gitgud.wackyideas.systemtray";
 var clockType = "io.gitgud.wackyideas.digitalclocklite";
 var showDesktopType = "io.gitgud.wackyideas.win7showdesktop";
+var internetExplorerLauncher = "applications:aero7-internet-explorer.desktop";
 var defaultLaunchers = [
+    internetExplorerLauncher,
     "applications:org.aero7.fileexplorer.desktop",
     "applications:linux-controlpanel.desktop",
     "applications:qterminal.desktop"
@@ -39,6 +41,7 @@ function configureTasks(tasks, launchers) {
     tasks.writeConfig("highlightWindows", true);
     tasks.writeConfig("disableJumplists", false);
     tasks.writeConfig("launchers", launchers);
+    tasks.writeConfig("internetExplorerPinMigrated", true);
 }
 
 function configurePanel(panel, screen, launchers) {
@@ -100,6 +103,12 @@ for (var index = 0; index < allPanels.length; ++index) {
         var savedLaunchers = candidateTasks.readConfig("launchers", []);
         if (savedLaunchers && savedLaunchers.length > 0) {
             canonicalLaunchers = savedLaunchers;
+            var pinMigrationDone = candidateTasks.readConfig(
+                "internetExplorerPinMigrated", false);
+            if (!pinMigrationDone
+                    && canonicalLaunchers.indexOf(internetExplorerLauncher) === -1) {
+                canonicalLaunchers.unshift(internetExplorerLauncher);
+            }
         }
     }
 }

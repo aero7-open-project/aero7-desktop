@@ -10,7 +10,8 @@
 
 A complete Aero7 Wayland session with an Aero taskbar, Start menu, desktop,
 Control Panel, File Explorer, notifications, recovery tools, and Desktop
-Gadgets, backed by current Linux and KDE infrastructure.
+Gadgets, plus a permanent Internet Explorer-compatible browser entry backed by
+a maintained modern browser and current Linux/KDE infrastructure.
 
 [![Arch Linux](https://img.shields.io/badge/Arch_Linux-supported-1793D1?logo=archlinux&logoColor=white)](https://archlinux.org/)
 [![Wayland](https://img.shields.io/badge/Wayland-default-FFBC00?logo=wayland&logoColor=black)](https://wayland.freedesktop.org/)
@@ -58,6 +59,9 @@ File Explorer instead of exposing a second competing desktop interface.
 - Aero7 Control Panel with native Linux-backed settings and system tools
 - Maintained Aero7 File Explorer with Libraries, Computer, Network, Recycle
   Bin, common dialogs, and KIO-backed file operations
+- Permanent Internet Explorer taskbar, Start, shortcut, and jump-list identity
+  that safely delegates browsing to the selected Firefox, Chromium, or other
+  supported modern browser backend
 - Aero7 Desktop Gadgets gallery with Calendar, Clock, CPU Meter, Currency,
   Feed Headlines, Picture Puzzle, Slide Show, Weather, and Media Center
 - Native notifications, network/audio/power status, wallpaper and theme
@@ -76,12 +80,16 @@ features.
 | Aero desktop and taskbar | Desktop icons, Start, grouped tasks, tray, clock, and Show Desktop |
 | Aero7 Control Panel | Familiar settings and system-management routes |
 | Aero7 File Explorer | Files, Libraries, Computer, Network, and common dialogs |
+| Aero7 Internet Explorer compatibility | Familiar browser identity, modern backend selection, default handling, taskbar grouping, new-window and InPrivate actions |
 | Aero7 Desktop Gadgets | Gallery, persistence, multi-monitor placement, and nine built-ins |
 | Aero7 recovery | Status, logs, same-shell restart, safe reset, and recovery UI |
 
 The desktop package brings these maintained components together as one tested
 Aero7 session. It does not install duplicate taskbars, Start menus, trays, or
-settings applications.
+settings applications. The Internet Explorer compatibility component is not a
+legacy Microsoft browser engine and contains no Microsoft binaries; it keeps
+the Aero7 shell identity while using an installed, updated browser for real
+web content.
 
 ## Installation and updates
 
@@ -121,7 +129,10 @@ GitHub Wiki from the `beta` branch.
 The current 0.2 beta line has been validated in an Arch/Plasma virtual machine
 for package installation, clean login, Start and taskbar interaction, Control
 Panel, File Explorer, Gadgets, recovery, upgrade, reinstall, uninstall, and a
-nested multi-monitor session.
+nested multi-monitor session. The Internet Explorer compatibility component
+was additionally tested with Firefox and Chromium for URL delegation,
+new-window and private-window actions, stable taskbar grouping, and a
+frame-by-frame startup check with no duplicate browser tile.
 
 Physical GPU, USB, suspend/resume, mixed-DPI, real connector hotplug, and broad
 hardware combinations still require testing. VM validation is useful release

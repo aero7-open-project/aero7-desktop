@@ -15,8 +15,10 @@ sudo pacman -Syu aero7-desktop
 ```
 
 The package depends on the maintained Aero7 File Explorer, Desktop Gadgets,
-Control Panel, Device Manager, Computer Management, AeroTheme desktop, and the
-Linux/KDE services needed by the session.
+Internet Explorer compatibility component, Control Panel, Device Manager,
+Computer Management, AeroTheme desktop, and the Linux/KDE services needed by
+the session. Install at least one supported modern browser backend; Firefox and
+Chromium are both validated.
 
 > **Beta note:** the signed pacman endpoint can temporarily lag behind the
 > package recipes while a package set is frozen for testing. If pacman reports

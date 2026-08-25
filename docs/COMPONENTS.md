@@ -10,6 +10,7 @@
 | SevenStart / SevenTasks | Start menu/search and taskbar behavior |
 | `/usr/bin/control` | Real Windows 7-style Control Panel and settings routes |
 | `aero7-file-explorer` | File Explorer wrapper around the separately packaged maintained Dolphin fork |
+| `companions/aero7-internet-explorer` / `aero7-internet-explorer` | Permanent Aero7 browser identity backed by a supported modern browser |
 | `companions/aero7-gadgets` / `aero7-gadgets` | Native gadget host, gallery, persistence and nine built-ins |
 | `aero7-recovery-ui` / `aero7-recovery` | Diagnostics and recoverable same-shell reset |
 | SMod and Aero KWin integrations | Glass decoration, blur, Snap, Shake, Peek, switchers |

@@ -7,7 +7,9 @@ Linux desktop.
 
 The session integration, recovery tooling, migration logic, original desktop
 artwork, and native Desktop Gadgets runtime in this repository are distributed
-under the MIT License unless a file states otherwise.
+under the MIT License unless a file states otherwise. The original Internet
+Explorer compatibility launcher and backend-selection source is maintained in
+this repository under its included MIT license.
 
 ## Maintained dependencies
 
@@ -23,8 +25,8 @@ for recorded third-party material and package signing-key provenance.
 ## Microsoft notice
 
 Aero7 Desktop is not affiliated with, authorized, sponsored, endorsed, or
-approved by Microsoft Corporation. Microsoft and Windows are trademarks of the
-Microsoft group of companies.
+approved by Microsoft Corporation. Microsoft, Windows, and Internet Explorer
+are trademarks of the Microsoft group of companies.
 
 No Microsoft binaries, Windows system files, or proprietary Microsoft artwork
 are included or redistributed.

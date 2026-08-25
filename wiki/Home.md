@@ -12,7 +12,9 @@ User documentation for the Windows 7-inspired Aero7 Wayland desktop.
 
 Aero7 Desktop brings the familiar desktop, taskbar, Start menu, window
 behavior, Control Panel, File Explorer, notifications, and Desktop Gadgets
-together in one native Linux session.
+together in one native Linux session. A permanent Internet Explorer-compatible
+entry preserves the Aero7 browser identity while delegating web content to an
+installed modern browser.
 
 The current release line is a beta. It is suitable for Aero7 testing and daily
 evaluation, but some physical-hardware combinations still need certification.
