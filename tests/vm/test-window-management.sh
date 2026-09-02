@@ -4,6 +4,7 @@ export LANG=C.UTF-8
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+export XDG_CONFIG_DIRS="${XDG_CONFIG_DIRS:-$HOME/.config/kdedefaults:/etc/xdg/aero7-desktop:/etc/xdg/aerothemeplasma:/etc/xdg}"
 
 fail() { printf 'FAIL %s\n' "$1" >&2; exit 1; }
 pass() { printf 'PASS %s\n' "$1"; }

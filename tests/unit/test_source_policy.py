@@ -16,7 +16,14 @@ class SourcePolicyTest(unittest.TestCase):
     def test_legacy_script_tree_is_not_imported_or_invoked(self):
         violations = []
         for path in ROOT.rglob("*"):
-            if not path.is_file() or ".git" in path.parts or "build" in path.parts:
+            relative = path.relative_to(ROOT)
+            generated_package_tree = (
+                len(relative.parts) >= 3
+                and relative.parts[:2] == ("packaging", "arch")
+                and relative.parts[2] in {"src", "pkg"}
+            )
+            if (not path.is_file() or ".git" in path.parts
+                    or "build" in path.parts or generated_package_tree):
                 continue
             if path.resolve() == Path(__file__).resolve():
                 continue

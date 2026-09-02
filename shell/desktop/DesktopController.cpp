@@ -57,21 +57,19 @@ QString DesktopItemsModel::desktopPath() const
 
 void DesktopItemsModel::reload()
 {
-    QVariantList rows{
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("Computer")},
-                    {QStringLiteral("url"), QStringLiteral("file:///")},
-                    {QStringLiteral("icon"), QStringLiteral("computer")},
-                    {QStringLiteral("kind"), QStringLiteral("system")}},
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("Recycle Bin")},
-                    {QStringLiteral("url"), QStringLiteral("trash:/")},
-                    {QStringLiteral("icon"), QStringLiteral("user-trash")},
-                    {QStringLiteral("kind"), QStringLiteral("system")}},
-    };
+    QVariantList rows;
     QDir directory(desktopPath());
     QMimeDatabase mimeDatabase;
     const auto entries = directory.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot,
                                                   QDir::DirsFirst | QDir::Name | QDir::IgnoreCase);
     for (const auto &entry : entries) {
+        if (entry.fileName() == QStringLiteral("Recycle Bin.desktop")) {
+            rows.append(QVariantMap{{QStringLiteral("name"), QStringLiteral("Recycle Bin")},
+                                    {QStringLiteral("url"), QStringLiteral("trash:/")},
+                                    {QStringLiteral("icon"), QStringLiteral("user-trash")},
+                                    {QStringLiteral("kind"), QStringLiteral("system")}});
+            continue;
+        }
         const auto mime = mimeDatabase.mimeTypeForFile(entry);
         rows.append(QVariantMap{{QStringLiteral("name"), entry.completeBaseName()},
                                 {QStringLiteral("url"), QUrl::fromLocalFile(entry.absoluteFilePath()).toString()},

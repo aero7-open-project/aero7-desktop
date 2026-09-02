@@ -16,6 +16,24 @@ wallpaper=/usr/share/wallpapers/Aero7/contents/images/1672x941.png
 mkdir -p "$state_home" "$config_home"
 chmod 700 "$state_home"
 
+ensure_fresh_desktop_default() {
+    local marker="$state_home/fresh-desktop-v1.applied"
+    local template='/etc/skel/Desktop/Recycle Bin.desktop'
+    local desktop_dir
+
+    [[ -e "$marker" ]] && return 0
+    desktop_dir="$(xdg-user-dir DESKTOP 2>/dev/null || true)"
+    [[ -n "$desktop_dir" ]] || desktop_dir="$HOME/Desktop"
+    mkdir -p "$desktop_dir"
+
+    # Populate an empty first-login desktop, but never delete or replace files
+    # that belong to an existing user.
+    if [[ -f "$template" ]] && ! find "$desktop_dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+        install -m 644 "$template" "$desktop_dir/Recycle Bin.desktop"
+    fi
+    touch "$marker"
+}
+
 wait_for_aeroshell() {
     local attempt shell_name
     for attempt in {1..60}; do
@@ -31,12 +49,39 @@ wait_for_aeroshell() {
 }
 
 apply_visual_defaults() {
+    # Global-theme tools may replace the Aero7 shell appearance while changing
+    # between a light and dark color scheme. Keep the user's selected colors,
+    # but always restore the Aero7-owned shell, icons, cursor, Plasma theme and
+    # window chrome.
+    kwriteconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage authui7
+    kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle kvantum
     kwriteconfig6 --file kdeglobals --group Icons --key Theme 'Windows 7 Aero'
     kwriteconfig6 --file kdeglobals --group Sounds --key Theme Aero7
     kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme aero-drop
     kwriteconfig6 --file plasmarc --group Theme --key name Seven-Black
     kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key library org.smod.smod
     kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key theme SMOD
+
+    # Re-selecting a Plasma global theme can leave Kvantum's running theme
+    # cache out of sync with the selected color scheme. Keep a real dark widget
+    # theme while dark mode is selected, and restore Windows7Aero for light
+    # schemes so new applications never inherit stale state from the previous
+    # mode.
+    local color_scheme kvantum_theme
+    color_scheme="$(kreadconfig6 --file kdeglobals --group General \
+        --key ColorScheme 2>/dev/null || true)"
+    if [[ "${color_scheme,,}" == *dark* ]]; then
+        kvantum_theme=KvDark
+    else
+        kvantum_theme=Windows7Aero
+    fi
+    if command -v kvantummanager >/dev/null 2>&1; then
+        kvantummanager --set "$kvantum_theme" >/dev/null 2>&1 || true
+    else
+        mkdir -p "$config_home/Kvantum"
+        kwriteconfig6 --file Kvantum/kvantum.kvconfig \
+            --group General --key theme "$kvantum_theme"
+    fi
 
     qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
     touch "$state_home/visual-defaults-v2.applied"
@@ -71,6 +116,7 @@ ensure_window_management_defaults() {
 }
 
 wait_for_aeroshell
+ensure_fresh_desktop_default
 
 # Units from the rejected overlay architecture may still be active during an
 # in-place package upgrade. Stop them explicitly; the AeroShell panel and
@@ -85,8 +131,29 @@ qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript \
 apply_wallpaper
 ensure_window_management_defaults
 
-if (( ! reconcile_only )) && [[ ! -e "$state_home/visual-defaults-v2.applied" ]]; then
-    apply_visual_defaults
+apply_visual_defaults
+
+reload_aeroshell_after_appearance_repair() {
+    # Plasma keeps parts of a newly applied global theme in memory even after
+    # their config keys are restored.  During health reconciliation, reload
+    # only the normal AeroShell service, wait for the requested shell package,
+    # and then assert the owned layout again.  The initial login path must not
+    # restart the service that this oneshot unit is ordered after.
+    systemctl --user set-environment \
+        PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop
+    # A user can switch appearance several times in quick succession. Clear
+    # the intentional reload counter so systemd's start-rate protection cannot
+    # strand the desktop shell in a failed state during rapid toggles.
+    systemctl --user reset-failed plasma-plasmashell.service
+    systemctl --user restart plasma-plasmashell.service
+    wait_for_aeroshell
+    qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript \
+        "$(<"$layout_script")" >/dev/null
+    apply_wallpaper
+}
+
+if ((reconcile_only)); then
+    reload_aeroshell_after_appearance_repair
 fi
 
 printf 'Aero7 shell layout and visual defaults are ready.\n'

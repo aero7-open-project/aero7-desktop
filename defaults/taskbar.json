@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "pins": [
-    "applications:org.aero7.fileexplorer.desktop",
-    "applications:linux-controlpanel.desktop",
-    "applications:qterminal.desktop"
+    "applications:qterminal.desktop",
+    "applications:org.aero7.FileExplorer.desktop",
+    "applications:aero7-internet-explorer.desktop"
   ]
 }

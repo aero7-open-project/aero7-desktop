@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Link
+Name=Recycle Bin
+Comment=Open the Recycle Bin
+Icon=user-trash
+URL=trash:/
+OnlyShowIn=KDE;

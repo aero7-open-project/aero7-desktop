@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# SPDX-License-Identifier: MIT
-set -e
-
-# The maintained Aero7 Dolphin fork keeps Dolphin's upstream translation
-# domain. This private locale changes only its product name while all missing
-# translations fall back to the user's normal language.
-export LANGUAGE="aero7${LANGUAGE:+:$LANGUAGE}"
-exec /usr/bin/dolphin "$@"

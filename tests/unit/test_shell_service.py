@@ -67,6 +67,35 @@ class ShellServiceTest(unittest.TestCase):
             })
             self.assertTrue(service.layout_state()["valid"])
 
+    def test_appearance_state_detects_a_global_theme_override(self):
+        def config_read(command, **_kwargs):
+            key = (command[2], command[4], command[6])
+            if key == ("kdeglobals", "General", "ColorScheme"):
+                return mock.Mock(returncode=0, stdout="Aero\n")
+            value = service.expected_appearance("Aero")[key]
+            if key == ("kdeglobals", "Icons", "Theme"):
+                value = "breeze-dark"
+            return mock.Mock(returncode=0, stdout=value + "\n")
+
+        with mock.patch.object(service.subprocess, "run", side_effect=config_read):
+            state = service.appearance_state()
+        self.assertFalse(state["valid"])
+        self.assertEqual(state["values"]["kdeglobals:Icons:Theme"], "breeze-dark")
+
+    def test_appearance_state_tracks_the_aero_kvantum_theme(self):
+        self.assertEqual(
+            service.expected_appearance("Aero")[
+                ("Kvantum/kvantum.kvconfig", "General", "theme")
+            ],
+            "Windows7Aero",
+        )
+        self.assertEqual(
+            service.expected_appearance("BreezeDark")[
+                ("Kvantum/kvantum.kvconfig", "General", "theme")
+            ],
+            "KvDark",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

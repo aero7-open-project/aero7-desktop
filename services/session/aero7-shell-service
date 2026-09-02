@@ -23,6 +23,16 @@ INTEGRATION_BINARIES = {
 EXPECTED_SHELL = "io.gitgud.wackyideas.desktop"
 EXPECTED_PANEL = "io.gitgud.wackyideas.panel"
 EXPECTED_DESKTOP = "io.gitgud.wackyideas.desktopcontainment"
+EXPECTED_APPEARANCE = {
+    ("kdeglobals", "KDE", "LookAndFeelPackage"): "authui7",
+    ("kdeglobals", "KDE", "widgetStyle"): "kvantum",
+    ("kdeglobals", "Icons", "Theme"): "Windows 7 Aero",
+    ("kdeglobals", "Sounds", "Theme"): "Aero7",
+    ("kcminputrc", "Mouse", "cursorTheme"): "aero-drop",
+    ("plasmarc", "Theme", "name"): "Seven-Black",
+    ("kwinrc", "org.kde.kdecoration2", "library"): "org.smod.smod",
+    ("kwinrc", "org.kde.kdecoration2", "theme"): "SMOD",
+}
 LAYOUT_QUERY = r'''
 var ps = panels();
 var ds = desktops();
@@ -124,6 +134,43 @@ def layout_state() -> dict:
     return state
 
 
+def expected_appearance(color_scheme: str) -> dict:
+    expected = dict(EXPECTED_APPEARANCE)
+    expected[("Kvantum/kvantum.kvconfig", "General", "theme")] = (
+        "KvDark" if "dark" in color_scheme.casefold() else "Windows7Aero"
+    )
+    return expected
+
+
+def appearance_state() -> dict:
+    color_result = subprocess.run(
+        ("kreadconfig6", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme"),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    expected_values = expected_appearance(color_result.stdout.strip())
+    values = {}
+    for file_name, group, key in expected_values:
+        result = subprocess.run(
+            ("kreadconfig6", "--file", file_name, "--group", group, "--key", key),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        values[f"{file_name}:{group}:{key}"] = result.stdout.strip()
+    return {
+        "valid": all(
+            values[f"{file_name}:{group}:{key}"] == expected
+            for (file_name, group, key), expected in expected_values.items()
+        ),
+        "colorScheme": color_result.stdout.strip(),
+        "values": values,
+    }
+
+
 def reconcile_layout() -> bool:
     helper = "/usr/lib/aero7-desktop/aero7-session-setup"
     if not os.access(helper, os.X_OK):
@@ -186,6 +233,7 @@ def snapshot() -> dict:
         },
         "plasmashell_unit": user_unit_state("plasma-plasmashell.service"),
         "layout": layout_state(),
+        "appearance": appearance_state(),
         "stock_fallback_allowed": False,
     }
 
@@ -196,7 +244,7 @@ def main() -> int:
     os.chmod(state_root, 0o700)
     log_path = state_root / "session.log"
     health_path = state_root / "health.json"
-    interval = max(2.0, float(os.environ.get("AERO7_HEALTH_INTERVAL", "15")))
+    interval = max(2.0, float(os.environ.get("AERO7_HEALTH_INTERVAL", "5")))
     running = True
     last_restart = 0.0
 
@@ -234,10 +282,12 @@ def main() -> int:
 
             if current.get("visible_shell") == EXPECTED_SHELL:
                 layout = current.get("layout", {})
-                if not layout.get("valid", False):
+                appearance = current.get("appearance", {})
+                if not layout.get("valid", False) or not appearance.get("valid", False):
                     if reconcile_layout():
                         current = snapshot()
-                        log.write(f"{iso_now()} reconciled Aero panels after layout/output change\n")
+                        reason = "layout/output" if not layout.get("valid", False) else "appearance"
+                        log.write(f"{iso_now()} reconciled Aero {reason} state\n")
                         log.flush()
 
             atomic_json(health_path, current)

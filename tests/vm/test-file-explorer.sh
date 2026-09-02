@@ -10,6 +10,7 @@ second_unit="$marker-second"
 
 cleanup() {
     pkill -x dolphin 2>/dev/null || true
+    pkill -f '^/usr/bin/aero7-file-explorer' 2>/dev/null || true
     systemctl --user stop "$first_unit.service" "$second_unit.service" 2>/dev/null || true
     if [[ -f "$HOME/.ssh/authorized_keys" ]]; then
         sed -i "/$marker/d" "$HOME/.ssh/authorized_keys"
@@ -30,15 +31,21 @@ cleanup() {
 trap cleanup EXIT
 fail() { printf 'FAIL %s\n' "$1" >&2; exit 1; }
 pass() { printf 'PASS %s\n' "$1"; }
-run_desktop() { systemd-run --user --quiet --wait --pipe "$@"; }
+run_desktop() { systemd-run --user --quiet --wait --pipe --collect "$@"; }
 kio() { run_desktop kioclient --noninteractive "$@"; }
 
 command -v dolphin >/dev/null || fail 'the Aero7 File Explorer compatibility launcher is not installed'
 command -v aero7-file-explorer >/dev/null || fail 'the Aero7 File Explorer launcher is not installed'
 command -v kioclient >/dev/null || fail 'KIO command-line integration is not installed'
 command -v ark >/dev/null || fail 'Ark archive integration is not installed'
-[[ "$(sed -n '/^\[Desktop Entry\]/,/^\[/s/^Name=//p' /usr/share/applications/org.kde.dolphin.desktop | head -1)" == 'File Explorer' ]] \
-    || fail 'the normal file manager launcher is not branded File Explorer'
+desktop=/usr/share/applications/org.aero7.FileExplorer.desktop
+[[ -f "$desktop" ]] || fail 'the canonical File Explorer launcher is missing'
+[[ "$(sed -n '/^\[Desktop Entry\]/,/^\[/s/^Name=//p' "$desktop" | head -1)" == 'File Explorer' ]] \
+    || fail 'the canonical file manager launcher is not branded File Explorer'
+grep -Fqx 'Exec=aero7-file-explorer %u' "$desktop" \
+    || fail 'the canonical launcher does not start the Aero7 fork'
+[[ ! -e /usr/share/applications/org.aero7.fileexplorer.desktop ]] \
+    || fail 'the obsolete duplicate File Explorer launcher is still installed'
 version_line="$(run_desktop aero7-file-explorer --version | head -1)"
 [[ -n "$version_line" ]] || fail 'Aero7 File Explorer could not start in the live Wayland session'
 version="${version_line##* }"
@@ -124,7 +131,7 @@ systemd-run --user --quiet --collect --unit="$first_unit" aero7-file-explorer --
 systemd-run --user --quiet --collect --unit="$second_unit" aero7-file-explorer --new-window "$work/destination"
 windows_found=false
 for _ in {1..50}; do
-    process_count="$(pgrep -cx dolphin || true)"
+    process_count="$(pgrep -fc '^/usr/bin/aero7-file-explorer ' || true)"
     taskbar="$(qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript 'var result={};for(var panel of panels()){for(var widget of panel.widgets()){if(widget.type==="io.gitgud.wackyideas.seventasks"){widget.currentConfigGroup=["General"];result={groupingStrategy:widget.readConfig("groupingStrategy",0),groupPopups:widget.readConfig("groupPopups",false),showPreviews:widget.readConfig("showPreviews",false)};}}}print(JSON.stringify(result));')"
     if python - "$process_count" "$taskbar" 2>/dev/null <<'PY'
 import json, sys

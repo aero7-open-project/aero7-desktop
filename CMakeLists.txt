@@ -57,7 +57,6 @@ install(PROGRAMS
     shell/session/aero7-session
     shell/recovery/aero7-recovery
     migrations/aero7-migrate
-    integration/file-explorer/aero7-file-explorer
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
@@ -92,7 +91,6 @@ install(FILES
 )
 
 install(FILES
-    packaging/applications/org.aero7.fileexplorer.desktop
     tests/visual/org.aero7.visualtest.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
 )
@@ -148,6 +146,9 @@ install(FILES defaults/start.json
 )
 install(FILES defaults/desktop.json
     DESTINATION ${AERO7_DATADIR}/defaults
+)
+install(FILES "defaults/Recycle Bin.desktop"
+    DESTINATION /etc/skel/Desktop
 )
 install(FILES compatibility/desktop-stack.json
     DESTINATION ${AERO7_DATADIR}/compatibility

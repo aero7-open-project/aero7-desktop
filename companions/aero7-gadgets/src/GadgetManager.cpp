@@ -221,17 +221,12 @@ void GadgetManager::restoreSession()
 {
     m_restoring = true;
     QFile file(layoutPath());
-    bool restored = false;
     if (file.open(QIODevice::ReadOnly)) {
         const auto document = QJsonDocument::fromJson(file.readAll());
         const auto array = document.object().value(QStringLiteral("gadgets")).toArray();
         for (const auto &entry : array) {
-            restored |= createWindow(stateFromJson(entry.toObject())) != nullptr;
+            createWindow(stateFromJson(entry.toObject()));
         }
-    }
-    if (!restored) {
-        createWindow(defaultState(*definition(QStringLiteral("org.aero7.gadgets.clock")), 0));
-        createWindow(defaultState(*definition(QStringLiteral("org.aero7.gadgets.weather")), 1));
     }
     m_restoring = false;
     scheduleSave();
@@ -318,8 +313,6 @@ void GadgetManager::ResetLayout()
     for (GadgetWindow *window : old) {
         window->deleteLater();
     }
-    createWindow(defaultState(*definition(QStringLiteral("org.aero7.gadgets.clock")), 0));
-    createWindow(defaultState(*definition(QStringLiteral("org.aero7.gadgets.weather")), 1));
     scheduleSave();
     emit LayoutChanged();
 }

@@ -8,12 +8,16 @@ var tasksType = "io.gitgud.wackyideas.seventasks";
 var trayType = "io.gitgud.wackyideas.systemtray";
 var clockType = "io.gitgud.wackyideas.digitalclocklite";
 var showDesktopType = "io.gitgud.wackyideas.win7showdesktop";
+var disabledTrayItems = [
+    // Windows 7 does not expose a permanent brightness tray icon. Brightness
+    // remains available through hardware keys and Display/Power settings.
+    "org.kde.plasma.brightness"
+];
 var internetExplorerLauncher = "applications:aero7-internet-explorer.desktop";
 var defaultLaunchers = [
-    internetExplorerLauncher,
-    "applications:org.aero7.fileexplorer.desktop",
-    "applications:linux-controlpanel.desktop",
-    "applications:qterminal.desktop"
+    "applications:qterminal.desktop",
+    "applications:org.aero7.FileExplorer.desktop",
+    internetExplorerLauncher
 ];
 
 function normalizedScreen(panel) {
@@ -25,6 +29,40 @@ function normalizedScreen(panel) {
 function firstWidget(panel, type) {
     var matches = panel.widgets(type);
     return matches.length > 0 ? matches[0] : null;
+}
+
+function sameLauncherList(left, right) {
+    if (!left || left.length !== right.length) {
+        return false;
+    }
+    for (var index = 0; index < left.length; ++index) {
+        if (left[index] !== right[index]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function isPreviousFactoryLayout(launchers) {
+    var previousLayouts = [
+        [
+            internetExplorerLauncher,
+            "applications:org.aero7.fileexplorer.desktop",
+            "applications:linux-controlpanel.desktop",
+            "applications:qterminal.desktop"
+        ],
+        [
+            "applications:org.aero7.fileexplorer.desktop",
+            "applications:linux-controlpanel.desktop",
+            "applications:qterminal.desktop"
+        ]
+    ];
+    for (var index = 0; index < previousLayouts.length; ++index) {
+        if (sameLauncherList(launchers, previousLayouts[index])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function configureTasks(tasks, launchers) {
@@ -42,6 +80,33 @@ function configureTasks(tasks, launchers) {
     tasks.writeConfig("disableJumplists", false);
     tasks.writeConfig("launchers", launchers);
     tasks.writeConfig("internetExplorerPinMigrated", true);
+    tasks.writeConfig("windows7FactoryPinLayoutMigrated", true);
+}
+
+function withoutDisabledTrayItems(items) {
+    if (!items) {
+        return [];
+    }
+    var filtered = [];
+    for (var index = 0; index < items.length; ++index) {
+        if (disabledTrayItems.indexOf(items[index]) === -1) {
+            filtered.push(items[index]);
+        }
+    }
+    return filtered;
+}
+
+function configureTray(tray) {
+    if (!tray) {
+        return;
+    }
+    tray.currentConfigGroup = ["General"];
+    tray.writeConfig("extraItems",
+        withoutDisabledTrayItems(tray.readConfig("extraItems", [])));
+    tray.writeConfig("shownItems",
+        withoutDisabledTrayItems(tray.readConfig("shownItems", [])));
+    tray.writeConfig("hiddenItems",
+        withoutDisabledTrayItems(tray.readConfig("hiddenItems", [])));
 }
 
 function configurePanel(panel, screen, launchers) {
@@ -64,9 +129,11 @@ function configurePanel(panel, screen, launchers) {
     }
     configureTasks(tasks, launchers);
 
-    if (!firstWidget(panel, trayType)) {
-        panel.addWidget(trayType);
+    var tray = firstWidget(panel, trayType);
+    if (!tray) {
+        tray = panel.addWidget(trayType);
     }
+    configureTray(tray);
     if (!firstWidget(panel, clockType)) {
         panel.addWidget(clockType);
     }
@@ -103,11 +170,10 @@ for (var index = 0; index < allPanels.length; ++index) {
         var savedLaunchers = candidateTasks.readConfig("launchers", []);
         if (savedLaunchers && savedLaunchers.length > 0) {
             canonicalLaunchers = savedLaunchers;
-            var pinMigrationDone = candidateTasks.readConfig(
-                "internetExplorerPinMigrated", false);
-            if (!pinMigrationDone
-                    && canonicalLaunchers.indexOf(internetExplorerLauncher) === -1) {
-                canonicalLaunchers.unshift(internetExplorerLauncher);
+            var factoryPinMigrationDone = candidateTasks.readConfig(
+                "windows7FactoryPinLayoutMigrated", false);
+            if (!factoryPinMigrationDone && isPreviousFactoryLayout(canonicalLaunchers)) {
+                canonicalLaunchers = defaultLaunchers;
             }
         }
     }

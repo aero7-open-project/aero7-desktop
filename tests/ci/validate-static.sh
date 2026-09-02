@@ -8,9 +8,7 @@ mapfile -d '' shell_files < <(find . -path './build' -prune -o -type f -name '*.
 for file in "${shell_files[@]}"; do
     bash -n "$file"
 done
-shellcheck --severity=error "${shell_files[@]}" \
-    integration/file-explorer/aero7-file-explorer \
-    shell/session/aero7-session
+shellcheck --severity=error "${shell_files[@]}" shell/session/aero7-session
 
 mapfile -t qml_files < <(find shell -type f -name '*.qml' -print | sort)
 qmllint_binary="$(command -v qmllint || true)"

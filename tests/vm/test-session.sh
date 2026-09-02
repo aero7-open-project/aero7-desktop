@@ -24,7 +24,7 @@ check_file /usr/bin/aero7-recovery-ui
 check_file /usr/bin/control
 check_file /usr/bin/aero7-file-explorer
 check_file /usr/share/applications/linux-controlpanel.desktop
-check_file /usr/share/applications/org.aero7.fileexplorer.desktop
+check_file /usr/share/applications/org.aero7.FileExplorer.desktop
 check_file /usr/share/locale/aero7/LC_MESSAGES/dolphin.mo
 check_file /usr/lib/aero7-desktop/aero7-shell-service
 check_file /usr/lib/aero7-desktop/aero7-session-setup
@@ -62,6 +62,7 @@ for stale in \
     /usr/share/applications/org.aero7.notifications.desktop \
     /usr/share/applications/org.aero7.desktop.desktop \
     /usr/share/applications/org.aero7.controlpanel.desktop \
+    /usr/share/applications/org.aero7.fileexplorer.desktop \
     /usr/share/dbus-1/services/org.aero7.Start.service \
     /usr/lib/systemd/user/aero7-taskbar.service \
     /usr/lib/systemd/user/aero7-start.service \
