@@ -1,20 +1,19 @@
 # Asset provenance
 
-The `aero7-internet-explorer` application icon is a new Aero7-owned raster
-asset generated for this component. It is not copied from Microsoft Windows,
-Internet Explorer, Edge, or a browser package.
+The namespaced application, InPrivate, settings, desktop-shortcut, and warning
+PNG assets under `icons/` are selected from `aerothemeplasma-icons` commit
+`96950b8028a5d960cb683280fe5f1d9e33e6b8a2`, the same pack revision pinned
+by Aero7's Pacman repository.
 
-Generation prompt:
+The application master is `internet-web-browser.png`; 64 px and 128 px
+launcher variants are mechanical downscales of the pack's 256 px file because
+those sizes are not present upstream. The action and status files are unmodified
+pack images renamed to stable Aero7 resource names.
 
-> Create an original Aero7 application icon for a compatibility web launcher:
-> a glossy cobalt-blue lowercase e-shaped ribbon wrapping around a small
-> blue-green globe, with a thin golden orbital swoosh and cyan glass
-> highlights. Centered, readable at 16 px, transparent background. Use a
-> late-2000s skeuomorphic glass aesthetic, but do not use Microsoft or Windows
-> logos, do not reproduce the exact Internet Explorer silhouette, and include
-> no text or watermark.
+Upstream declares AGPL-3.0-or-later. Preserve `icons/UPSTREAM-LICENSE` and
+`icons/UPSTREAM-README.md`, including its attribution, trademark, and
+original-asset ownership notices.
 
-The generated 1254 x 1254 transparent PNG was resized with ImageMagick into
-the standard hicolor sizes installed by this project. The source-generation
-artifact is retained in the Aero7 development workspace; the distributable
-icons are under `icons/` and are covered by this project's MIT license.
+Core application, action, status, window, and notification artwork is embedded
+with `resources/icons.qrc`. The selected third-party browser backend icon is
+the only intentional theme-aware icon.

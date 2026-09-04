@@ -1,4 +1,5 @@
 #include "SettingsDialog.h"
+#include "IconResources.h"
 
 #include <aero7compat/InternetExplorer.h>
 
@@ -44,7 +45,7 @@ int main(int argc, char **argv)
     app.setApplicationDisplayName(QStringLiteral("Internet Explorer"));
     app.setOrganizationName(QStringLiteral("Aero7"));
     app.setApplicationVersion(QStringLiteral("0.1.0"));
-    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("aero7-internet-explorer")));
+    app.setWindowIcon(aero7OwnedIcon(QStringLiteral(":/aero7/icons/app/aero7-internet-explorer.png")));
     Aero7::applyApplicationStyle(&app);
 
     QCommandLineParser parser;

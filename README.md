@@ -36,6 +36,19 @@ group of companies.**
 > Aero7 Desktop is beta software. It is intended for Aero7 testing systems and
 > should not yet be treated as a physical-hardware production certification.
 
+## Beta 2 integration status
+
+The Beta 2 source line includes the complete Aero7 Wayland session, stable
+factory taskbar and desktop defaults, the SDDM and lock-screen branding fixes,
+Windows-style rectangular screenshots, optional desktop-environment selection,
+and the maintained companion applications. Application icons are embedded from
+the approved AeroThemePlasma icon pack so changing to Breeze, Breeze Dark, or
+another system theme does not replace Aero7 application identities.
+
+The source and package recipes are published independently from the Aero7 ISO.
+An ISO should be treated as available only when it appears on the main Aero7
+release page with matching checksums.
+
 ## About the project
 
 Aero7 Desktop is the user-facing desktop environment for

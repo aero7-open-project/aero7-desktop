@@ -4,6 +4,7 @@ project(Aero7InternetExplorer VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 include(GNUInstallDirs)
 include(CTest)
@@ -41,6 +42,7 @@ if(AERO7_IE_BUILD_UI)
     add_executable(aero7-internet-explorer
         src/main.cpp
         src/SettingsDialog.cpp
+        resources/icons.qrc
     )
     target_link_libraries(aero7-internet-explorer PRIVATE
         Aero7::CompatibilityLauncher Qt6::Widgets Aero7Qt::Aero7Qt
@@ -67,6 +69,12 @@ if(AERO7_IE_BUILD_UI)
             DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps
         )
     endforeach()
+    install(FILES
+        icons/actions/aero7-internet-explorer-settings.png
+        icons/actions/aero7-internet-explorer-shortcut.png
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps)
+    install(FILES icons/actions/aero7-internet-explorer-inprivate.png
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/16x16/apps)
     install(FILES icons/256x256/aero7-internet-explorer.png
         DESTINATION ${CMAKE_INSTALL_DATADIR}/aero7/internet-explorer
         RENAME icon.png
@@ -77,6 +85,7 @@ install(FILES LICENSE README.md docs/ARCHITECTURE.md docs/SECURITY.md
               docs/VM-RESULTS-2026-08-25.md
               docs/REQUIREMENTS-AUDIT.md
               docs/ASSET-PROVENANCE.md
+              icons/UPSTREAM-LICENSE icons/UPSTREAM-README.md
     DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/aero7-internet-explorer
 )
 install(DIRECTORY docs/screenshots
@@ -97,7 +106,19 @@ if(BUILD_TESTING)
             -DDESKTOP_FILE=${CMAKE_CURRENT_SOURCE_DIR}/data/aero7-internet-explorer.desktop
             -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/verify-desktop-entry.cmake
     )
+    add_executable(aero7-internet-explorer-icon-test
+        tests/test_icon_independence.cpp resources/icons.qrc)
+    target_include_directories(aero7-internet-explorer-icon-test PRIVATE src)
+    target_link_libraries(aero7-internet-explorer-icon-test PRIVATE Qt6::Widgets)
+    add_test(NAME aero7-internet-explorer-icon-independence
+        COMMAND aero7-internet-explorer-icon-test)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_test(NAME aero7-internet-explorer-icon-policy
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_icon_policy.py)
     set_tests_properties(aero7-internet-explorer-tests PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
+    set_tests_properties(aero7-internet-explorer-icon-independence PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     )
 endif()

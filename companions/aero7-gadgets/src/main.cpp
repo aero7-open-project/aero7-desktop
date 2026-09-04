@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QFile>
+#include <QIcon>
 #include <QJsonDocument>
 #include <QSet>
 #include <QStandardPaths>
@@ -25,6 +26,7 @@ int main(int argc, char **argv)
     QApplication::setApplicationDisplayName(QStringLiteral("Desktop Gadgets"));
     QApplication::setDesktopFileName(QStringLiteral("org.aero7.GadgetHost"));
     QApplication::setOrganizationName(QStringLiteral("Aero7"));
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/aero7/icons/app/aero7-gadget-gallery.png")));
     QApplication::setQuitOnLastWindowClosed(false);
 
     QCommandLineParser parser;

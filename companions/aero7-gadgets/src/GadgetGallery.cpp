@@ -6,12 +6,14 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QDesktopServices>
+#include <QDebug>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPushButton>
 #include <QStyle>
 #include <QToolButton>
@@ -20,6 +22,21 @@
 
 namespace {
 constexpr int idRole = Qt::UserRole + 1;
+
+QIcon ownedIcon(const QString &path)
+{
+    const QIcon icon(path);
+    if (!icon.isNull()) return icon;
+    qWarning().noquote() << "[Aero7 Icons] Missing resource:" << path;
+    QPixmap fallback(64, 64); fallback.fill(Qt::transparent);
+    QPainter painter(&fallback); painter.setRenderHint(QPainter::Antialiasing);
+    painter.setBrush(QColor(38, 119, 181)); painter.setPen(QColor(15, 70, 108));
+    painter.drawRoundedRect(QRectF(5, 5, 54, 54), 10, 10);
+    painter.setPen(QPen(Qt::white, 4));
+    painter.drawRect(QRectF(17, 17, 12, 12)); painter.drawRect(QRectF(35, 17, 12, 12));
+    painter.drawRect(QRectF(17, 35, 12, 12)); painter.drawRect(QRectF(35, 35, 12, 12));
+    return QIcon(fallback);
+}
 
 class GadgetList final : public QListWidget
 {
@@ -116,7 +133,7 @@ GadgetGallery::GadgetGallery(GadgetManager *manager, QWidget *parent)
     , m_manager(manager)
 {
     setWindowTitle(QStringLiteral("Desktop Gadgets"));
-    setWindowIcon(QIcon::fromTheme(QStringLiteral("preferences-desktop-widgets")));
+    setWindowIcon(ownedIcon(QStringLiteral(":/aero7/icons/app/aero7-gadget-gallery.png")));
     setFixedSize(478, 350);
     setAttribute(Qt::WA_DeleteOnClose, false);
 
@@ -157,7 +174,7 @@ GadgetGallery::GadgetGallery(GadgetManager *manager, QWidget *parent)
     auto *footer = new QHBoxLayout;
     auto *detailsButton = new QToolButton(this); detailsButton->setText(QStringLiteral("⌄  Show details")); detailsButton->setAutoRaise(true); detailsButton->setCheckable(true);
     footer->addWidget(detailsButton); footer->addStretch(1);
-    auto *online = new QPushButton(QIcon::fromTheme(QStringLiteral("internet-web-browser")), QStringLiteral("Get more gadgets online"), this);
+    auto *online = new QPushButton(ownedIcon(QStringLiteral(":/aero7/icons/toolbar/online.png")), QStringLiteral("Get more gadgets online"), this);
     online->setFlat(true); online->setStyleSheet(QStringLiteral("QPushButton { color:#0655bd; text-decoration:underline; border:0; }"));
     footer->addWidget(online);
     root->addLayout(footer);

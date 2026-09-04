@@ -1,10 +1,15 @@
 /build/
+/**/build*/
 /stage/
 /*-build/
 /pkg/
 /src/
 /dist/
 /*.pkg.tar.*
+/**/*.pkg.tar.*
+/**/packaging/arch/*.tar.gz
+/**/packaging/arch/pkg/
+/**/packaging/arch/src/
 /artifacts/
 /.pytest_cache/
 __pycache__/

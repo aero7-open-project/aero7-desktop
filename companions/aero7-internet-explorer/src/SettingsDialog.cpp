@@ -1,4 +1,5 @@
 #include "SettingsDialog.h"
+#include "IconResources.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -20,7 +21,7 @@ SettingsDialog::SettingsDialog(InternetExplorer &internetExplorer,
     , m_internetExplorer(internetExplorer)
 {
     setWindowTitle(QStringLiteral("Internet Explorer"));
-    setWindowIcon(QIcon::fromTheme(QStringLiteral("aero7-internet-explorer")));
+    setWindowIcon(aero7OwnedIcon(QStringLiteral(":/aero7/icons/app/aero7-internet-explorer.png")));
     setFixedWidth(600);
     setStyleSheet(QStringLiteral(
         "SettingsDialog { background: #F0F0F0; }"
@@ -33,7 +34,7 @@ SettingsDialog::SettingsDialog(InternetExplorer &internetExplorer,
 
     auto *header = new QHBoxLayout;
     auto *icon = new QLabel;
-    icon->setPixmap(QIcon::fromTheme(QStringLiteral("aero7-internet-explorer"))
+    icon->setPixmap(aero7OwnedIcon(QStringLiteral(":/aero7/icons/app/aero7-internet-explorer.png"))
                         .pixmap(48, 48));
     header->addWidget(icon, 0, Qt::AlignTop);
     auto *headerText = new QVBoxLayout;
@@ -96,6 +97,8 @@ SettingsDialog::SettingsDialog(InternetExplorer &internetExplorer,
                                     QDialogButtonBox::ActionRole);
     auto *shortcut = buttons->addButton(QStringLiteral("Create desktop shortcut"),
                                         QDialogButtonBox::ActionRole);
+    more->setIcon(aero7OwnedIcon(QStringLiteral(":/aero7/icons/app/aero7-internet-explorer.png")));
+    shortcut->setIcon(aero7OwnedIcon(QStringLiteral(":/aero7/icons/actions/shortcut.png")));
     connect(more, &QPushButton::clicked, this, [] {
         InternetExplorer::openProgramsCenter();
     });
@@ -151,8 +154,8 @@ int showNoBrowserDialog(QWidget *parent)
 {
     QMessageBox message(parent);
     message.setWindowTitle(QStringLiteral("Internet Explorer"));
-    message.setWindowIcon(QIcon::fromTheme(QStringLiteral("aero7-internet-explorer")));
-    message.setIcon(QMessageBox::Warning);
+    message.setWindowIcon(aero7OwnedIcon(QStringLiteral(":/aero7/icons/app/aero7-internet-explorer.png")));
+    message.setIconPixmap(aero7OwnedIcon(QStringLiteral(":/aero7/icons/status/warning.png")).pixmap(48, 48));
     message.setText(QStringLiteral("A web browser could not be found on this computer."));
     message.setInformativeText(QStringLiteral(
         "Install a browser using Programs Center and try again."));

@@ -24,14 +24,14 @@ Icon=aero7-internet-explorer
 [Desktop Action InPrivate]
 Name=Start InPrivate Browsing
 Exec=aero7-internet-explorer --private
-Icon=view-private
+Icon=aero7-internet-explorer-inprivate
 
 [Desktop Action Settings]
 Name=Internet Explorer settings
 Exec=aero7-internet-explorer --settings
-Icon=preferences-system
+Icon=aero7-internet-explorer-settings
 
 [Desktop Action DesktopShortcut]
 Name=Create desktop shortcut
 Exec=aero7-internet-explorer --create-desktop-shortcut
-Icon=user-desktop
+Icon=aero7-internet-explorer-shortcut
