@@ -30,7 +30,8 @@ jobs:
         run: |
           DESTDIR="$PWD/stage" cmake --install build
           test -x stage/usr/bin/aero7-session
-          test -x stage/usr/bin/aero7-file-explorer
+          test -f stage/usr/share/locale/aero7/LC_MESSAGES/dolphin.mo
+          test ! -e stage/usr/bin/aero7-file-explorer
           test -x stage/usr/bin/aero7-recovery-ui
       - name: Build and test the included Desktop Gadgets runtime
         run: |
