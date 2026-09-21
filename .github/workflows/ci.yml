@@ -19,7 +19,7 @@ jobs:
           cmake ninja python git nodejs shellcheck gettext desktop-file-utils
           qt6-declarative qt6-tools kirigami kio kservice solid
           networkmanager-qt pulseaudio-qt plasma-workspace layer-shell-qt
-          kpipewire kwindowsystem qt6-svg
+          kpipewire kwindowsystem qt6-svg ttf-dejavu ttf-liberation
       - name: Static and QML validation
         run: tests/ci/validate-static.sh
       - name: Build
@@ -58,7 +58,7 @@ jobs:
           pacman -Syu --noconfirm
           cmake ninja python git gettext qt6-declarative kirigami kio kservice
           solid networkmanager-qt pulseaudio-qt plasma-workspace layer-shell-qt
-          kpipewire kwindowsystem qt6-svg
+          kpipewire kwindowsystem qt6-svg ttf-dejavu ttf-liberation
       - name: Build an unprivileged Arch package
         run: |
           useradd -m builder
