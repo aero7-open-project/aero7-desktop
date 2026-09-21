@@ -5,10 +5,11 @@ wallet name `Aero7 Credentials`. The existing optional Credential Vault keeps
 using KWallet encryption and Secret Service; it does not collect a second copy
 of the vault password or impersonate a requesting application.
 
-Status: source implementation and isolated Qt tests. Not yet selected in the
-Beta 2 package manifest. Installed-VM acceptance is required before closing the
-vault presentation release gate. This directory is not a separately published
-GitHub fork and does not claim to be one.
+Status: source implementation, isolated Qt tests and installed-VM replay pass.
+The accepted `kwallet 6.29.0-1.1` package is selected in the Beta 2 candidate
+manifest. Refreshed online/offline image integration remains required before
+closing the vault presentation release gate. This directory is not a separately
+published GitHub fork and does not claim to be one.
 
 ## Scope and invariants
 
