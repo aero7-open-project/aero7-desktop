@@ -33,6 +33,11 @@ import org.kde.plasma.private.digitalclock
 Item {
     id: main
 
+    readonly property real configuredPixelSize: Math.max(8, Math.round(
+        (Plasmoid.configuration.fontSize || Kirigami.Theme.defaultFont.pointSize || 9) * 96 / 72))
+    readonly property real themePixelSize: Math.max(8, Math.round(
+        (Kirigami.Theme.defaultFont.pointSize || 9) * 96 / 72))
+
     property string timeFormat
     property date currentTime
 
@@ -72,7 +77,8 @@ Item {
 
     // if the date/timezone cannot be fit with the smallest font to its designated space
     readonly property bool oneLineMode: Plasmoid.formFactor == PlasmaCore.Types.Horizontal &&
-                                        main.height <= 2 * Kirigami.Theme.smallestFont.pixelSize &&
+                                        main.height > 0 &&
+                                        main.height <= 2 * main.themePixelSize &&
                                         (main.showDate || timezoneLabel.visible)
                                         
     property QtObject dashWindow: null
@@ -151,13 +157,13 @@ Item {
                 target: timeLabel
 
                 height: sizehelper.height
-                font.pointSize: Math.min(Plasmoid.configuration.fontSize || Kirigami.Theme.defaultFont.pointSize, Math.round(timeLabel.height * 72 / 96))
+                font.pixelSize: Math.min(main.configuredPixelSize, timeLabel.height)
             }
 
             PropertyChanges {
                 target: timezoneLabel
 
-                font.pointSize: Math.min(Plasmoid.configuration.fontSize || Kirigami.Theme.defaultFont.pointSize, Math.round(timezoneLabel.height * 72 / 96))
+                font.pixelSize: Math.min(main.configuredPixelSize, timezoneLabel.height)
             }
 
             PropertyChanges {
@@ -166,7 +172,7 @@ Item {
                 height: 0.8 * timeLabel.height
                 width: dateLabel.paintedWidth
 
-                font.pointSize: Math.min(Plasmoid.configuration.fontSize || Kirigami.Theme.defaultFont.pointSize, Math.round(dateLabel.height * 72 / 96))
+                font.pixelSize: Math.min(main.configuredPixelSize, dateLabel.height)
             }
 
             AnchorChanges {
@@ -187,7 +193,7 @@ Item {
                  * and still fits well into the panel with all the applied margins.
                  */
                 height: Math.min(main.showDate || timezoneLabel.visible ? main.height * 0.56 : main.height * 0.71,
-                                 3 * Kirigami.Theme.defaultFont.pixelSize)
+                                 3 * main.themePixelSize)
 
                 font.pixelSize: sizehelper.height
             }
@@ -260,10 +266,10 @@ Item {
             PropertyChanges {
                 target: sizehelper
 
-                height: Math.min(main.height, 3 * Kirigami.Theme.defaultFont.pixelSize)
+                height: Math.min(main.height, 3 * main.themePixelSize)
 
                 fontSizeMode: Text.VerticalFit
-                font.pixelSize: 3 * Kirigami.Theme.defaultFont.pixelSize
+                font.pixelSize: 3 * main.themePixelSize
             }
         },
 
@@ -320,7 +326,7 @@ Item {
                 width: main.width
 
                 fontSizeMode: Text.Fit
-                minimumPixelSize: Math.min(0.7 * Kirigami.Theme.smallestFont.pixelSize, timeLabel.height)
+                minimumPixelSize: Math.min(0.7 * main.themePixelSize, timeLabel.height)
                 elide: Text.ElideRight
             }
 
@@ -337,7 +343,7 @@ Item {
                 width: main.width
 
                 fontSizeMode: Text.HorizontalFit
-                font.pixelSize: 3 * Kirigami.Theme.defaultFont.pixelSize
+                font.pixelSize: 3 * main.themePixelSize
             }
         },
 
@@ -550,7 +556,7 @@ Item {
                     family: Plasmoid.configuration.fontFamily || Kirigami.Theme.defaultFont.family
                     weight: Plasmoid.configuration.boldText ? Font.Bold : Kirigami.Theme.defaultFont.weight
                     italic: Plasmoid.configuration.italicText
-                    pointSize: (Plasmoid.configuration.fontSize || Kirigami.Theme.defaultFont.pointSize)
+                    pixelSize: main.configuredPixelSize
                     hintingPreference: Font.PreferFullHinting
                 }
                 minimumPixelSize: 1

@@ -27,9 +27,6 @@ import org.kde.plasma.workspace.calendar as PlasmaCalendar
 import org.kde.ksvg as KSvg
 import org.kde.plasma.clock
 
-import org.kde.kcmutils // KCMLauncher
-import org.kde.config // KAuthorized
-
 PlasmoidItem {
     id: root
     anchors.fill: parent
@@ -100,20 +97,35 @@ PlasmoidItem {
         return format;
     }
 
-    Plasmoid.contextualActions: [
-        PlasmaCore.Action {
-            text: i18n("Adjust Date and Time…")
-            icon.name: "clock"
-            visible: KAuthorized.authorize("kcm_clock")
-            onTriggered: KCMLauncher.openSystemSettings("kcm_clock")
-        },
-        PlasmaCore.Action {
-            text: i18n("Set Time Format…")
-            icon.name: "gnumeric-format-thousand-separator"
-            visible: KAuthorized.authorizeControlModule("kcm_regionandlang")
-            onTriggered: KCMLauncher.openSystemSettings("kcm_regionandlang")
+    function launchControlSetting(setting) {
+        controlPanelLauncher.exec("/usr/bin/control --setting " + setting)
+    }
+
+    PlasmaCore.Action {
+        id: configureAction
+        text: i18n("Adjust Date and Time…")
+        icon.name: "clock"
+        onTriggered: root.launchControlSetting("date-time")
+    }
+
+    PlasmaCore.Action {
+        id: formatAction
+        text: i18n("Set Time Format…")
+        icon.name: "gnumeric-format-thousand-separator"
+        onTriggered: root.launchControlSetting("region-language")
+    }
+
+    Plasmoid.contextualActions: [configureAction, formatAction]
+
+    P5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function exec(command) {
+            connectSource(command)
         }
-    ]
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
     
     PlasmaCalendar.EventPluginsManager {
         id: eventPluginsManager
@@ -126,6 +138,7 @@ PlasmoidItem {
         // Set the list of enabled plugins from config
         // to the manager
         eventPluginsManager.enabledPlugins = Plasmoid.configuration.enabledCalendarPlugins;
+        Plasmoid.setInternalAction("configure", configureAction);
         
 
     }

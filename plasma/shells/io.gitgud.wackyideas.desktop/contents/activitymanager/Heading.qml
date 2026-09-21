@@ -12,13 +12,21 @@ import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.kirigami 2.20 as Kirigami
 
-import org.kde.kcmutils as KCM
+import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.config as KConfig
 import Qt5Compat.GraphicalEffects
 
 
 Item {
     id: root
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function openActivities() { connectSource("/usr/bin/control --setting activities") }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     property alias searchString: searchText.text
     property bool showingSearch: false
@@ -106,7 +114,7 @@ Item {
             icon.name: "configure"
             visible: KConfig.KAuthorized.authorizeControlModule("kcm_activities")
             onClicked: {
-                KCM.KCMLauncher.openSystemSettings("kcm_activities");
+                controlPanelLauncher.openActivities();
                 root.closeRequested();
             }
         }

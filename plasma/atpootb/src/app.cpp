@@ -81,7 +81,8 @@ void App::syncPlasmaWithSDDM()
 
     args[QStringLiteral("sddm.conf")] = QLatin1String(SDDM_CONFIG_FILE);
 
-    args[QStringLiteral("kde_settings.conf/General/GreeterEnvironment")] = QStringLiteral("QML_DISABLE_DISTANCEFIELD=1");
+    args[QStringLiteral("kde_settings.conf/General/GreeterEnvironment")] = QStringLiteral(
+        "QML_DISABLE_DISTANCEFIELD=1,QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1,QT_WAYLAND_SHELL_INTEGRATION=layer-shell");
     args[QStringLiteral("kde_settings.conf/Theme/Current")] = QStringLiteral("sddm-theme-mod");
     args[QStringLiteral("kde_settings.conf/Theme/CursorTheme")] = QStringLiteral("aero-drop");
 

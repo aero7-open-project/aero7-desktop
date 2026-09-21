@@ -124,7 +124,7 @@ FocusScope {
         onEntered: if (main.state == "") main.state = "hover";
         onExited: if (main.state == "hover") main.state = "";
         onClicked: { container.focus = true; toggle() }
-        onWheel: {
+        onWheel: function(wheel) {
             if (wheel.angleDelta.y > 0)
                 listView.decrementCurrentIndex()
             else
@@ -132,7 +132,7 @@ FocusScope {
         }
     }
 
-    Keys.onPressed: {
+    Keys.onPressed: function(event) {
         if (event.key === Qt.Key_Up) {
             listView.decrementCurrentIndex()
         } else if (event.key === Qt.Key_Down) {

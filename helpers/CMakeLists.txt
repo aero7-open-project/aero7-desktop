@@ -1,0 +1,3 @@
+add_subdirectory(shellactions)
+add_subdirectory(snippingtool)
+add_subdirectory(sddmaccessibility)

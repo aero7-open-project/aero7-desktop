@@ -5,7 +5,6 @@ import Qt5Compat.GraphicalEffects
 
 import org.kde.kirigami as Kirigami
 import org.kde.ksvg as KSvg
-import org.kde.kcmutils as KCMUtils
 import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.private.sessions
 
@@ -112,11 +111,11 @@ Image {
                             root.logoutRequested();
                             break;
                         case(3):
-                            KCMUtils.KCMLauncher.openSystemSettings("kcm_users");
+                            executable.exec("/usr/bin/control --setting accounts");
                             root.cancelRequested();
                             break;
                         case(4):
-                            executable.exec("kstart ksysguard");
+                            executable.exec("tux-manager");
                             break;
                     }
                 }
@@ -269,7 +268,7 @@ Image {
                     propagateComposedEvents: true
 
                     onClicked: {
-                        KCMUtils.KCMLauncher.openSystemSettings("kcm_access");
+                        executable.exec("/usr/bin/control --setting accessibility");
                         root.cancelRequested();
                     }
 

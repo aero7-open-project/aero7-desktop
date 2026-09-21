@@ -7,7 +7,6 @@ import Qt5Compat.GraphicalEffects
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import org.kde.ksvg as KSvg
-import org.kde.kwindowsystem
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -63,38 +62,27 @@ MouseArea {
         ListView {
             id: thumbnailList
 
-            // check for null to get rid of null errors in console
-            property int maxThumbnailWidth: maxThumbnailItem == null ? 0 : maxThumbnailItem.implicitWidth
-            property int maxThumbnailHeight: maxThumbnailItem == null ? 0 : maxThumbnailItem.implicitHeight
-            property Item maxThumbnailItem
+            // Store measurements, not a binding to a delegate whose assigned
+            // geometry depends on this group. Recompute from all live items so
+            // shrinking/removing the old maximum also reduces the group size.
+            property real maxThumbnailWidth: 0
+            property real maxThumbnailHeight: 0
 
             property int listWidth: contentWidth == 0 ? 196 : contentWidth
             property int listHeight: contentHeight == 0 ? 142 : contentHeight
 
             function updateMaxSize() {
-                var thumbnailItem = itemAtIndex(0);
-                if(thumbnailItem !== null) {
-                    if(isList) {
-                        for(var i = 0; i < thumbnailList.count; i++) {
-                            thumbnailItem = itemAtIndex(i);
-                            if(thumbnailItem) {
-                                if(thumbnailItem.implicitWidth >= thumbnailList.maxThumbnailWidth)
-                                    thumbnailList.maxThumbnailItem = thumbnailItem;
-                            }
-                        }
-                    }
-                    else {
-                        if(KWindowSystem.isPlatformWayland) maxThumbnailItem = null;
-                        for(var i = 0; i < thumbnailList.count; i++) {
-                            thumbnailItem = itemAtIndex(i);
-                            if(thumbnailItem) {
-                                if(thumbnailItem.implicitHeight >= thumbnailList.maxThumbnailHeight)
-                                    thumbnailList.maxThumbnailItem = thumbnailItem;
-
-                            }
-                        }
+                let maximumWidth = 0;
+                let maximumHeight = 0;
+                for (let i = 0; i < count; ++i) {
+                    const item = itemAtIndex(i);
+                    if (item) {
+                        maximumWidth = Math.max(maximumWidth, item.implicitWidth);
+                        maximumHeight = Math.max(maximumHeight, item.implicitHeight);
                     }
                 }
+                maxThumbnailWidth = maximumWidth;
+                maxThumbnailHeight = maximumHeight;
             }
 
             interactive: false
@@ -103,8 +91,10 @@ MouseArea {
             model: !isList ? thumbnailModel : listModel
             clip: true
 
-            // HACK: delay the update by 15 ms to leave time for the thumbnail item's implicitHeight/implicitWidth property to correct itself
-            onCountChanged: if(count > 1) updateDelayTimer.start()
+            // Let delegates/layouts settle, including transitions to one or
+            // zero rows and switches between thumbnails and the overflow list.
+            onCountChanged: updateDelayTimer.restart()
+            onModelChanged: updateDelayTimer.restart()
 
             Timer {
                 id: updateDelayTimer

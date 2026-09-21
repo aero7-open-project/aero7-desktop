@@ -59,18 +59,21 @@ PlasmaCore.ToolTipArea {
     function updateToolTipBindings() {
         taskThumbnail.parentTask = Qt.binding(() => task);
 
-        taskThumbnail.demandsAttention = Qt.binding(() => model.IsDemandingAttention);
-        taskThumbnail.minimized = Qt.binding(() => model.IsMinimized);
-        taskThumbnail.display = Qt.binding(() => model.display);
-        taskThumbnail.icon = Qt.binding(() => model.decoration);
-        taskThumbnail.active = Qt.binding(() => model.IsActive);
-        taskThumbnail.startup = Qt.binding(() => model.IsStartup)
-        taskThumbnail.windows = Qt.binding(() => model.WinIdList);
+        // The shared tooltip can outlive a task's populated model roles during
+        // startup/removal. Clear unavailable values instead of keeping stale
+        // state after QML rejects undefined assignments to typed properties.
+        taskThumbnail.demandsAttention = Qt.binding(() => model?.IsDemandingAttention ?? false);
+        taskThumbnail.minimized = Qt.binding(() => model?.IsMinimized ?? false);
+        taskThumbnail.display = Qt.binding(() => model?.display ?? "");
+        taskThumbnail.icon = Qt.binding(() => model?.decoration ?? "");
+        taskThumbnail.active = Qt.binding(() => model?.IsActive ?? false);
+        taskThumbnail.startup = Qt.binding(() => model?.IsStartup ?? false);
+        taskThumbnail.windows = Qt.binding(() => model?.WinIdList ?? []);
         taskThumbnail.modelIndex = Qt.binding(() => task.modelIndex());
-        taskThumbnail.taskIndex = Qt.binding(() => model.index);
-        taskThumbnail.pidParent = Qt.binding(() => model.AppPid);
-        taskThumbnail.launcherUrl = Qt.binding(() => model.LauncherUrlWithoutIcon);
-        taskThumbnail.isGroupParent = Qt.binding(() => model.IsGroupParent);
+        taskThumbnail.taskIndex = Qt.binding(() => model?.index ?? -1);
+        taskThumbnail.pidParent = Qt.binding(() => model?.AppPid ?? 0);
+        taskThumbnail.launcherUrl = Qt.binding(() => model?.LauncherUrlWithoutIcon ?? "");
+        taskThumbnail.isGroupParent = Qt.binding(() => model?.IsGroupParent ?? false);
         taskThumbnail.taskHovered = Qt.binding(() => dragArea.containsMouse);
     }
     // END TOOLTIP CODE
@@ -96,9 +99,9 @@ PlasmaCore.ToolTipArea {
                 var taskCount = taskList.contentItem.visibleChildren.length;
                 if(taskCount <= 1) taskCount = taskList.count
                 if(taskCount < 0) taskCount = 0;
-                var launcherCount = tasksModel.logicalLauncherCount;
+                var launcherCount = tasksRoot.logicalLauncherCount;
                 if(launcherCount === 0) launcherCount = 1;
-                var currentWidth = Math.floor((taskList.width - (LayoutMetrics.preferredMinLauncherWidth()+16) * (launcherCount)) / (taskList.count - tasksModel.logicalLauncherCount));
+                var currentWidth = Math.floor((taskList.width - (LayoutMetrics.preferredMinLauncherWidth()+16) * (launcherCount)) / (taskList.count - tasksRoot.logicalLauncherCount));
                 return Math.min(maxWidth, Math.max(minWidth, currentWidth));
             }
         }
@@ -1401,7 +1404,7 @@ TaskManagerApplet.SmartLauncherItem { }
                 Badge {
                     id: badge
                     visible: task.smartLauncherItem && task.smartLauncherItem.countVisible
-                    number: task.smartLauncherItem.count
+                    number: task.smartLauncherItem ? task.smartLauncherItem.count : 0
                     anchors.top: parent.top
                     anchors.right: parent.right
                     anchors.rightMargin: (tasksRoot.height <= 30) ? (-Kirigami.Units.largeSpacing + (label.visible ? Kirigami.Units.smallSpacing : 0)) : -Kirigami.Units.smallSpacing

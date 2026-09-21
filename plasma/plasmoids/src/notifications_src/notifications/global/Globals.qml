@@ -131,6 +131,9 @@ QtObject {
         }
 
         const containment = plasmoid.containment;
+        if (!containment || !containment.screenGeometry || !containment.availableScreenRect) {
+            return Qt.rect(0, 0, -1, -1);
+        }
         // NOTE this is our "plasmoid" property from above, don't port this to Plasmoid attached property!
         let rect = Qt.rect(containment.screenGeometry.x + containment.availableScreenRect.x,
                            containment.screenGeometry.y + containment.availableScreenRect.y,
@@ -261,8 +264,8 @@ QtObject {
             }
         });
         globals.plasmoidItems = newPlasmoidItems;
-        globals.plasmoidItem = newPlasmoidItems[0];
-        globals.plasmoid = globals.plasmoidItem.plasmoid;
+        globals.plasmoidItem = newPlasmoidItems.length > 0 ? newPlasmoidItems[0] : null;
+        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;
     }
 
     function checkInhibition() {

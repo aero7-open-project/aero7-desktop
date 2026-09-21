@@ -9,6 +9,7 @@ import QtQml 2.15
 
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.config // for KAuthorized
 import org.kde.kirigami 2.20 as Kirigami
@@ -380,6 +381,28 @@ FocusScope {
         id: actionSeparatorThird
         isSeparator: true
     }
+    PlasmaCore.Action {
+        id: screenResolutionAction
+        text: i18n("Screen resolution")
+        icon.name: "preferences-desktop-display"
+        onTriggered: controlPanelLauncher.exec("/usr/bin/control --setting display")
+    }
+    PlasmaCore.Action {
+        id: gadgetGalleryAction
+        text: i18n("Gadgets")
+        icon.name: "preferences-desktop-widgets"
+        onTriggered: controlPanelLauncher.exec("/usr/bin/aero7-gadget-gallery")
+    }
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function exec(command) {
+            connectSource(command)
+        }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     Component.onCompleted: {
         if (!isContainment) {
@@ -403,6 +426,8 @@ FocusScope {
         }
 
         Plasmoid.contextualActions.push(actionSeparatorThird);
+        Plasmoid.contextualActions.push(screenResolutionAction);
+        Plasmoid.contextualActions.push(gadgetGalleryAction);
 
         Plasmoid.contextualActionsAboutToShow.connect(updateContextualActions);
         Plasmoid.contextualActionsAboutToShow.connect(folderView.model.clearSelection);

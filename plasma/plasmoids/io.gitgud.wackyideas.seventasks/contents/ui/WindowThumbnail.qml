@@ -45,17 +45,17 @@ MouseArea {
 
     implicitWidth: maxPreviewWidth + margins
     implicitHeight: thumbnailHeight + margins +
-        (tasks.iconsOnly ? header.height : 0) +
-        (mprisControls.active ? (mprisControls.height - (Kirigami.Units.smallSpacing*2)) : 0)
+        (tasks.iconsOnly ? header.implicitHeight : 0) +
+        (mprisControls.active ? (mprisControls.implicitHeight - (Kirigami.Units.smallSpacing*2)) : 0)
 
-    onImplicitHeightChanged: if(isGroupDelegate) {
-        ListView.view.updateMaxSize()
+    onImplicitHeightChanged: if (isGroupDelegate && ListView.view) {
+        Qt.callLater(ListView.view.updateMaxSize);
     }
 
     width: implicitWidth
     height: {
-        if(isGroupDelegate && ListView.view.maxThumbnailItem !== thumbnailRoot)
-            return ListView.view.maxThumbnailHeight;
+        if (isGroupDelegate && ListView.view)
+            return Math.max(implicitHeight, ListView.view.maxThumbnailHeight);
         else
             return implicitHeight;
     }
@@ -78,7 +78,7 @@ MouseArea {
             prefix: "attention"
 
             visible: demandsAttention
-            opacity: root.parentTask.attentionAnimOpacity
+            opacity: root.parentTask ? root.parentTask.attentionAnimOpacity : 0
         }
 
         KSvg.FrameSvgItem {
@@ -490,5 +490,5 @@ MouseArea {
         source: "PlayerController.qml"
     }
 
-    Component.onDestruction: if(isGroupDelegate) ListView.view.updateMaxSize()
+    Component.onDestruction: if (isGroupDelegate && ListView.view) Qt.callLater(ListView.view.updateMaxSize)
 }

@@ -30,6 +30,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.draganddrop
 
 import org.kde.plasma.private.kicker 0.1 as Kicker
+import org.kde.kitemmodels as KItemModels
 import org.kde.kirigami as Kirigami
 
 Item {
@@ -186,13 +187,38 @@ Item {
 
         anchors.fill: parent
         interactive: contentHeight > height
-        model: globalFavorites
+        model: KItemModels.KSortFilterProxyModel {
+            sourceModel: globalFavorites
+
+            function trigger(proxyRow, actionId, actionArgument) {
+                const sourceIndex = mapToSource(index(proxyRow, 0));
+                return sourceIndex.row >= 0
+                    ? sourceModel.trigger(sourceIndex.row, actionId || "", actionArgument ?? null)
+                    : false;
+            }
+
+            function moveRow(fromProxyRow, toProxyRow) {
+                const fromIndex = mapToSource(index(fromProxyRow, 0));
+                const toIndex = mapToSource(index(toProxyRow, 0));
+                if (fromIndex.row >= 0 && toIndex.row >= 0) {
+                    sourceModel.moveRow(fromIndex.row, toIndex.row);
+                }
+            }
+
+            filterRowCallback: function(sourceRow, sourceParent) {
+                const sourceIndex = sourceModel.index(sourceRow, 0, sourceParent);
+                const displayName = sourceModel.data(sourceIndex, Qt.DisplayRole);
+                return !kicker.isFullyHiddenApplication(displayName);
+            }
+        }
         //move: moveTransition
         //moveDisplaced: moveTransition
 
         onCountChanged: {
             animationDuration = 0;
-            resetAnimationDurationTimer.start();
+            if (resetAnimationDurationTimer) {
+                resetAnimationDurationTimer.restart();
+            }
         }
     }
     Timer {

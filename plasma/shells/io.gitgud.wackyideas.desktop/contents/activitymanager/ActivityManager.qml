@@ -11,7 +11,7 @@ import QtQuick.Controls as QQC2
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kirigami 2.20 as Kirigami
 import org.kde.config as KConfig  // KAuthorized
-import org.kde.kcmutils  // KCMLauncher
+import org.kde.plasma.plasma5support as Plasma5Support
 
 
 FocusScope {
@@ -23,6 +23,14 @@ FocusScope {
     }
 
     property Item rootItem
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function openActivities() { connectSource("/usr/bin/control --setting activities") }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     //this is used to perfectly align the filter field and delegates
     property int cellWidth: Kirigami.Units.iconSizes.sizeForLabels * 30
@@ -148,7 +156,7 @@ FocusScope {
                 anchors.bottomMargin: Kirigami.Units.largeSpacing
                 //width: parent.width
 
-                onClicked: KCMLauncher.openSystemSettings("kcm_activities", "newActivity")
+                onClicked: controlPanelLauncher.openActivities()
 
                 visible: KConfig.KAuthorized.authorize("plasma-desktop/add_activities")
                 opacity: newActivityDialog.status == Loader.Ready ?
@@ -173,4 +181,3 @@ FocusScope {
     }
 
 }
-

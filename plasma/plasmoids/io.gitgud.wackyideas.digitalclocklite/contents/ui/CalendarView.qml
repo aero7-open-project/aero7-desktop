@@ -111,7 +111,7 @@ PlasmaCore.Dialog {
 
     property bool debug: false
 
-    property bool isExpanded: Plasmoid.expanded
+    property bool isExpanded: !!Plasmoid.expanded
 
     onIsExpandedChanged: {
         // clear all the selections when the plasmoid is showing/hiding
@@ -542,7 +542,7 @@ PlasmaCore.Dialog {
 					id: link_ma
 					anchors.fill: parent
 					hoverEnabled: true
-					onClicked: Plasmoid.internalAction("configure").trigger()
+					onClicked: root.launchControlSetting("date-time")
 					cursorShape: Qt.PointingHandCursor
 					z: 5
 				}

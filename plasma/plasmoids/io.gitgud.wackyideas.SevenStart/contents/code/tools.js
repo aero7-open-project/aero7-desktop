@@ -40,6 +40,31 @@ function fillActionMenu(i18n, actionMenu, actionList, favoriteModel, favoriteId)
     actionMenu.actionList = actionList;
 }
 
+function aeroActionList(i18n, sourceActions, openAction) {
+    var blocked = [
+        "add widgets", "manage widgets", "edit mode", "enter edit mode",
+        "configure panel", "configure taskbar", "configure task manager",
+        "show alternatives", "edit application", "kde menu editor",
+        "remove panel", "remove this panel"
+    ];
+    var result = [{
+        text: i18n("Open"),
+        icon: "document-open",
+        action: openAction
+    }];
+    (sourceActions || []).forEach(function (item) {
+        var text = String(item.text || "").replace(/&/g, "").trim().toLowerCase();
+        for (var index = 0; index < blocked.length; ++index) {
+            if (text.indexOf(blocked[index]) !== -1)
+                return;
+        }
+        if (item.subActions)
+            item.subActions = aeroActionList(i18n, item.subActions, openAction).slice(1);
+        result.push(item);
+    });
+    return result;
+}
+
 function createFavoriteActions(i18n, favoriteModel, favoriteId) {
     if (favoriteModel === null || !favoriteModel.enabled || favoriteId == null) {
         return null;
@@ -52,11 +77,11 @@ function createFavoriteActions(i18n, favoriteModel, favoriteId) {
             var action = {};
 
             if (favoriteModel.isFavorite(favoriteId)) {
-                action.text = i18n("Remove from Favorites");
+                action.text = i18n("Unpin from Start Menu");
                 action.icon = "list-remove";
                 action.actionId = "_kicker_favorite_remove";
             } else if (favoriteModel.maxFavorites == -1 || favoriteModel.count < favoriteModel.maxFavorites) {
-                action.text = i18n("Add to Favorites");
+                action.text = i18n("Pin to Start Menu");
                 action.icon = "bookmark-new";
                 action.actionId = "_kicker_favorite_add";
             } else {
@@ -151,11 +176,11 @@ function createFavoriteActions(i18n, favoriteModel, favoriteId) {
         var action = {};
 
         if (favoriteModel.isFavorite(favoriteId)) {
-            action.text = i18n("Remove from Favorites");
+            action.text = i18n("Unpin from Start Menu");
             action.icon = "list-remove";
             action.actionId = "_kicker_favorite_remove";
         } else if (favoriteModel.maxFavorites == -1 || favoriteModel.count < favoriteModel.maxFavorites) {
-            action.text = i18n("Add to Favorites");
+            action.text = i18n("Pin to Start Menu");
             action.icon = "bookmark-new";
             action.actionId = "_kicker_favorite_add";
         } else {

@@ -117,57 +117,57 @@
          offset="0"
          style="stop-color:#000000;stop-opacity:0.06122449;" />
       <stop
-         style="stop-color:#3167ff;stop-opacity:0.35294116"
+         style="stop-color:#5b83b8;stop-opacity:0.35294116"
          offset="0.28507671"
          id="stop1138" />
       <stop
-         style="stop-color:#7ebcff;stop-opacity:0.16470589"
+         style="stop-color:#9fc2e5;stop-opacity:0.16470589"
          offset="0.2913385"
          id="stop1140" />
       <stop
          id="stop1142"
          offset="0.34376019"
-         style="stop-color:#4d59ff;stop-opacity:0.42745098" />
+         style="stop-color:#667caf;stop-opacity:0.42745098" />
       <stop
          id="stop1144"
          offset="0.39310053"
-         style="stop-color:#5c84ff;stop-opacity:0.32156864" />
+         style="stop-color:#7d9bc5;stop-opacity:0.32156864" />
       <stop
-         style="stop-color:#7ebcff;stop-opacity:0.16862746"
+         style="stop-color:#9fc2e5;stop-opacity:0.16862746"
          offset="0.40131494"
          id="stop1146" />
       <stop
          id="stop1148"
          offset="0.42569745"
-         style="stop-color:#7ebcff;stop-opacity:0.19215687" />
+         style="stop-color:#9fc2e5;stop-opacity:0.19215687" />
       <stop
          id="stop1150"
          offset="0.43263599"
-         style="stop-color:#5d76ff;stop-opacity:0.40784314" />
+         style="stop-color:#7991ba;stop-opacity:0.40784314" />
       <stop
-         style="stop-color:#125eff;stop-opacity:0.39215687"
+         style="stop-color:#447db7;stop-opacity:0.39215687"
          offset="0.50198394"
          id="stop1152" />
       <stop
          id="stop1154"
          offset="0.5062806"
-         style="stop-color:#1c5aff;stop-opacity:0.47058824" />
+         style="stop-color:#4b7db6;stop-opacity:0.47058824" />
       <stop
          id="stop1156"
          offset="0.51964968"
-         style="stop-color:#2e88ff;stop-opacity:0.47058824" />
+         style="stop-color:#6497ca;stop-opacity:0.47058824" />
       <stop
-         style="stop-color:#5790ff;stop-opacity:0.42745098"
+         style="stop-color:#78a3ce;stop-opacity:0.42745098"
          offset="0.54968733"
          id="stop1158" />
       <stop
          id="stop1160"
          offset="0.55512947"
-         style="stop-color:#1f5eff;stop-opacity:0.35294116" />
+         style="stop-color:#4f7fb4;stop-opacity:0.35294116" />
       <stop
          id="stop1162"
          offset="1"
-         style="stop-color:#7ebcff;stop-opacity:0.0627451" />
+         style="stop-color:#9fc2e5;stop-opacity:0.0627451" />
     </linearGradient>
     <radialGradient
        inkscape:collect="always"

@@ -15,6 +15,7 @@ import org.kde.plasma.components as PC3
 import org.kde.kquickcontrolsaddons
 import org.kde.draganddrop as DragDrop
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.plasma5support as Plasma5Support
 
 import "LayoutManager.js" as LayoutManager
 
@@ -25,9 +26,49 @@ ContainmentItem {
     // filled in by the shell (Panel.qml) with the plasma-workspace PanelView
     property var panel: null
 
-    property int panelThickness: root.panel.thickness
-    property bool panelFloating: root.panel.floating
-    property bool panelFloatingApplets: root.panel.floatingApplets
+    property int panelThickness: root.panel ? root.panel.thickness : Plasmoid.configuration.panelThickness
+    property bool panelFloating: root.panel ? !!root.panel.floating : false
+    property bool panelFloatingApplets: root.panel ? !!root.panel.floatingApplets : false
+
+    function runShellAction(action) {
+        shellAction.exec("aero7-shell-action " + action);
+    }
+
+    function enforceAero7NoEditMode() {
+        if (Plasmoid.containment.corona.editMode) {
+            Plasmoid.containment.corona.editMode = false;
+        }
+        if (root.configOverlay) {
+            root.configOverlay.destroy();
+            root.configOverlay = null;
+        }
+    }
+
+    Connections {
+        target: Plasmoid.containment.corona
+        function onEditModeChanged() {
+            root.enforceAero7NoEditMode();
+        }
+    }
+
+    Plasma5Support.DataSource {
+        id: shellAction
+        engine: "executable"
+        connectedSources: []
+
+        function exec(command) {
+            if (command)
+                connectSource(command);
+        }
+
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
+
+    TaskbarContextMenu {
+        id: taskbarContextMenu
+        taskbarLocked: !!Plasmoid.immutable
+        runAction: action => root.runShellAction(action)
+    }
 
     onPanelThicknessChanged: {
         if(root.panel) {
@@ -134,6 +175,7 @@ ContainmentItem {
         root.checkLastSpacer();
         // When a new preset panel is added, avoid calling save() multiple times
         Qt.callLater(LayoutManager.save);
+        Qt.callLater(gradientRect.refreshTaskApplet);
         /*Qt.callLater(() => {
            gradientRect.applet = Qt.binding(() => { return gradientRect.findApplet(); });
            gradientRect.nextApplet = Qt.binding(() => { return gradientRect.findNextApplet(); });
@@ -147,30 +189,12 @@ ContainmentItem {
         }
         checkLastSpacer();
         LayoutManager.save();
+        Qt.callLater(gradientRect.refreshTaskApplet);
     }
 
     Plasmoid.onUserConfiguringChanged: {
-        if (!Plasmoid.userConfiguring) {
-            gradientRect.updateProps = !gradientRect.updateProps
-            if (root.configOverlay) {
-                root.configOverlay.destroy();
-                root.configOverlay = null;
-            }
-            return;
-        }
-
-        if (Plasmoid.immutable) {
-            return;
-        }
-
-        Containment.applets.forEach(applet => applet.expanded = false);
-        const component = Qt.createComponent("ConfigOverlay.qml");
-        root.configOverlay = component.createObject(root, {
-            "anchors.fill": dropArea,
-            "anchors.rightMargin": root.isHorizontal ? toolBox.width : 0,
-            "anchors.bottomMargin": !root.isHorizontal ? toolBox.height : 0,
-        });
-        component.destroy();
+        gradientRect.refreshTaskApplet();
+        root.enforceAero7NoEditMode();
     }
 //END connections
 
@@ -206,13 +230,20 @@ ContainmentItem {
             LayoutManager.marginHighlights = [];
             LayoutManager.appletsModel = appletsModel;
             LayoutManager.restore();
+            root.enforceAero7NoEditMode();
 
-            root.Plasmoid.internalAction("configure").visible = Qt.binding(function() {
-                return !root.Plasmoid.immutable;
-            });
-            root.Plasmoid.internalAction("configure").enabled = Qt.binding(function() {
-                return !root.Plasmoid.immutable;
-            });
+            // Aero7 owns taskbar configuration. These Plasma containment
+            // actions must never become normal-session user interface.
+            const configure = root.Plasmoid.internalAction("configure");
+            if (configure) {
+                configure.visible = false;
+                configure.enabled = false;
+            }
+            const addWidgets = root.Plasmoid.internalAction("add widgets");
+            if (addWidgets) {
+                addWidgets.visible = false;
+                addWidgets.enabled = false;
+            }
         }
 
         onDragEnter: event => {
@@ -264,7 +295,7 @@ ContainmentItem {
                 property bool isMarginSeparator: ((applet.plasmoid?.constraintHints & Plasmoid.MarginAreasSeparator) == Plasmoid.MarginAreasSeparator)
                 property int appletIndex: index // To make sure it's always readable even inside other models
                 property bool inThickArea: false
-                visible: applet.plasmoid?.status !== PlasmaCore.Types.HiddenStatus || (!Plasmoid.immutable && Plasmoid.userConfiguring) || Containment.corona.editMode;
+                visible: applet.plasmoid?.status !== PlasmaCore.Types.HiddenStatus;
 
                 //when the applet moves caused by its resize, don't animate.
                 //this is completely heuristic, but looks way less "jumpy"
@@ -494,21 +525,25 @@ ContainmentItem {
                     }
                 }
             }
-            property bool iconsOnlyApplet: applet ? applet.applet.iconsOnly : false
+            property bool iconsOnlyApplet: applet && applet.applet ? !!applet.applet.iconsOnly : false
             property int index: applet ? applet.index : -1
             property int count: appletsModel.count
             property string targetPlasmoid: "io.gitgud.wackyideas.seventasks"
             function findApplet() {
                 for(var i = 0; i < currentLayout.visibleChildren.length; i++) {
-                    if(currentLayout.visibleChildren[i].applet.Plasmoid.pluginName === targetPlasmoid) {
-                        return currentLayout.visibleChildren[i];
+                    const child = currentLayout.visibleChildren[i];
+                    if(child && child.applet && child.applet.Plasmoid
+                            && child.applet.Plasmoid.pluginName === targetPlasmoid) {
+                        return child;
                     }
                 }
                 return null
             }
             function findNextApplet() {
                 for(var i = 0; i < currentLayout.visibleChildren.length; i++) {
-                    if(currentLayout.visibleChildren[i].applet.Plasmoid.pluginName === targetPlasmoid) {
+                    const child = currentLayout.visibleChildren[i];
+                    if(child && child.applet && child.applet.Plasmoid
+                            && child.applet.Plasmoid.pluginName === targetPlasmoid) {
                         if(i == currentLayout.visibleChildren.length-1) {
                             return null;
                         }
@@ -517,9 +552,32 @@ ContainmentItem {
                 }
                 return null;
             }
-            property Item nextApplet: updateProps, findNextApplet();
-            property Item applet: updateProps, findApplet();
+            function refreshTaskApplet() {
+                applet = findApplet();
+                nextApplet = findNextApplet();
+                updateProps = !updateProps;
+            }
+            property Item nextApplet: null
+            property Item applet: null
+            Component.onCompleted: Qt.callLater(refreshTaskApplet)
         }
+        // This handler sits below every applet. It therefore receives only
+        // empty taskbar background clicks; Start, task buttons and tray icons
+        // keep their own context menus. Accepting the right button here is
+        // what prevents the containment from opening a second Plasma menu.
+        MouseArea {
+            id: taskbarBackgroundMouse
+            anchors.fill: parent
+            acceptedButtons: Qt.RightButton
+            propagateComposedEvents: false
+            onPressed: mouse => mouse.accepted = true
+            onClicked: mouse => {
+                mouse.accepted = true;
+                taskbarContextMenu.visualParent = taskbarBackgroundMouse;
+                taskbarContextMenu.open(mouse.x, mouse.y);
+            }
+        }
+
         GridLayout {
             id: currentLayout
 
@@ -532,7 +590,7 @@ ContainmentItem {
             columnSpacing: Kirigami.Units.smallSpacing
 
             x: Qt.application.layoutDirection === Qt.RightToLeft && isHorizontal ? toolBoxSize : 0;
-            readonly property int toolBoxSize: !toolBox || !Plasmoid.containment.corona.editMode || Qt.application.layoutDirection === Qt.RightToLeft ? 0 : (isHorizontal ? toolBox.width : toolBox.height)
+            readonly property int toolBoxSize: 0
 
             property int horizontalDisplacement: dropArea.anchors.leftMargin + dropArea.anchors.rightMargin + (isHorizontal ? currentLayout.toolBoxSize : 0)
             property int verticalDisplacement: dropArea.anchors.topMargin + dropArea.anchors.bottomMargin + (isHorizontal ? 0 : currentLayout.toolBoxSize)
@@ -564,7 +622,7 @@ ContainmentItem {
     }
     MouseArea {
         anchors.fill: parent
-        visible: Containment.corona.editMode && !Plasmoid.userConfiguring
+        visible: false
         hoverEnabled: true
         onClicked: Plasmoid.internalAction("configure").trigger()
         Rectangle {
@@ -586,7 +644,7 @@ ContainmentItem {
     PC3.ToolButton {
         id: addWidgetsButton
         anchors.centerIn: parent
-        visible: appletsModel.count === 0
+        visible: false
         text: isHorizontal ? i18nd("plasma_shell_org.kde.plasma.desktop", "Add Widgets…") : undefined
         icon.name: "list-add-symbolic"
         onClicked: Plasmoid.internalAction("add widgets").trigger()

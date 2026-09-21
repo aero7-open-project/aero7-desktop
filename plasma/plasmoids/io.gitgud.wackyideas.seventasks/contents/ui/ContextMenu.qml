@@ -742,36 +742,6 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem { separator: true }
 
     PlasmaExtras.MenuItem {
-        property QtObject configureAction: null
-
-        enabled: configureAction && configureAction.enabled
-        visible: configureAction && configureAction.visible
-
-        text: configureAction ? configureAction.text : ""
-        icon: configureAction ? configureAction.icon : ""
-
-        onClicked: configureAction.trigger()
-
-        Component.onCompleted: configureAction = Plasmoid.internalAction("configure")
-    }
-
-    PlasmaExtras.MenuItem {
-        property QtObject editModeAction: null
-
-        enabled: editModeAction && editModeAction.enabled
-        visible: editModeAction && editModeAction.visible
-
-        text: editModeAction ? editModeAction.text : ""
-        icon: editModeAction ? editModeAction.icon : ""
-
-        onClicked: editModeAction.trigger()
-
-        Component.onCompleted: editModeAction = Plasmoid.containment.internalAction("configure")
-    }
-
-    PlasmaExtras.MenuItem { separator: true }
-
-    PlasmaExtras.MenuItem {
         id: closeWindowItem
         visible: (visualParent && !get(atm.IsLauncher) && !get(atm.IsStartup))
 

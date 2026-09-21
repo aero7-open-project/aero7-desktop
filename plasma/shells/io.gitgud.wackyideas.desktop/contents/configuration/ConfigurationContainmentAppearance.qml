@@ -261,7 +261,7 @@ Item {
                 bottomMargin: pluginComboBox.height + parent.spacing
                 iconSource: "preferences-desktop-theme-global"
                 text: i18nd("plasma_shell_org.kde.plasma.desktop", "Window Color")
-                command: "kstart aeroshell-kcmloader kwin/effects/configs/kwin_aeroglassblur_config.so " + iconSource
+                command: "/usr/bin/control --setting colors"
                 execHelper: menu_executable
             }
             FooterItem {
@@ -270,7 +270,7 @@ Item {
                 bottomMargin: pluginComboBox.height + parent.spacing
                 iconSource: "application-x-theme"
                 text: i18nd("plasma_shell_org.kde.plasma.desktop", "Window Decorations")
-                command: "kstart aeroshell-kcmloader org.kde.kdecoration3.kcm/kcm_smoddecoration.so " + iconSource
+                command: "/usr/bin/control --setting window-decoration"
                 execHelper: menu_executable
             }
             FooterItem {
@@ -279,7 +279,7 @@ Item {
                 bottomMargin: pluginComboBox.height + parent.spacing
                 iconSource: "preferences-sound"
                 text: i18nd("plasma_shell_org.kde.plasma.desktop", "Sounds")
-                command: "kstart systemsettings kcm_soundtheme"
+                command: "/usr/bin/control --setting sound-theme"
                 execHelper: menu_executable
             }
         }

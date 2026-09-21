@@ -75,7 +75,7 @@ public:
      * @param flags is used for handling if the PerStripe value is updated
      * on load.
      */
-    void loadAndApplyPositionsConfig(const QString &resolution = QString());
+    Q_INVOKABLE void loadAndApplyPositionsConfig(const QString &resolution = QString());
 
     /**
      * Saves the positions in m_positions to a configuration file
@@ -109,7 +109,7 @@ public:
 
     bool screenInUse() const;
 
-    bool updateResolution();
+    Q_INVOKABLE bool updateResolution();
 
     #ifdef BUILD_TESTING
     QHash<int, int> proxyToSourceMapping() const

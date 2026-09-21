@@ -58,11 +58,15 @@ ScrollView {
 
         pixelAligned: true
 
-        readonly property int itemCount: model.count
+        readonly property int itemCount: model ? model.count : 0
 
 
         model: KItemModels.KSortFilterProxyModel {
-            sourceModel: Plasmoid.systemTrayModel
+            id: hiddenItemsModel
+            sourceModel: null
+            Component.onCompleted: Qt.callLater(function() {
+                hiddenItemsModel.sourceModel = Plasmoid.systemTrayModel
+            })
             filterRoleName: "effectiveStatus"
             filterRowCallback: (sourceRow, sourceParent) => {
                 let value = sourceModel.data(sourceModel.index(sourceRow, 0, sourceParent), filterRole);

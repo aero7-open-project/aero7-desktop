@@ -13,6 +13,7 @@ import org.kde.plasma.extras  as PlasmaExtras
 import org.kde.plasma.private.kicker as Kicker
 import org.kde.coreaddons as KCoreAddons // kuser
 import org.kde.plasma.private.shell 2.0
+import org.kde.plasma.plasma5support as Plasma5Support
 
 import org.kde.kwindowsystem 1.0
 import org.kde.kquickcontrolsaddons 2.0
@@ -20,7 +21,6 @@ import org.kde.kquickcontrolsaddons 2.0
 
 import org.kde.kirigami 2.13 as Kirigami
 import org.kde.kquickcontrolsaddons 2.0 as KQuickAddons
-import org.kde.kcmutils as KCM
 import org.kde.kwindowsystem 1.0
 
 
@@ -34,6 +34,16 @@ Item {
 
         property alias iconSource: imgAuthorIcon.source
         property alias fallbackIcon: imgAuthorIcon.fallback
+
+        Plasma5Support.DataSource {
+            id: userAction
+            engine: "executable"
+            connectedSources: []
+            onNewData: (sourceName, data) => disconnectSource(sourceName)
+            function exec(command) {
+                if (command) connectSource(command)
+            }
+        }
 
         BorderImage {
             source: "../pics/user.png"
@@ -93,6 +103,13 @@ Item {
             mipmap: true
             visible: true
         }
+        Kirigami.Icon {
+            anchors.fill: parent
+            anchors.margins: Kirigami.Units.smallSpacing * 2
+            source: "preferences-system-users"
+            visible: imgAuthorIcon.source === "" && kuser.faceIconUrl.toString() === ""
+            z: 50
+        }
         /*OpacityMask {
             anchors.fill: imgAuthor
             source: (kuser.faceIconUrl.toString() === "") ? imgAuthorIcon : imgAuthor;
@@ -106,7 +123,7 @@ Item {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton
             onPressed: {
-                KCM.KCMLauncher.openSystemSettings("kcm_users")
+                userAction.exec("control --page user-accounts")
                 root.visible = false;
             }
             cursorShape: Qt.PointingHandCursor

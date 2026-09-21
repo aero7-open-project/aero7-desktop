@@ -71,7 +71,10 @@ Item {
     readonly property bool isNew: model?.isNewlyInstalled ?? false
 
     onAboutToShowActionMenu: (actionMenu) => { // Loads context menu items here
-        var actionList = hasActionList ? model.actionList : [];
+        var actionList = Tools.aeroActionList(
+            i18n,
+            hasActionList ? Array.from(model.actionList) : [],
+            () => listItem.activate());
         if(model.favoriteId) { // If we have a launchable application, try allowing the user to pin it
             // Find seventasks instance, if available
             const entry = "applications:" + model.favoriteId; //kicker.convertUrl(model.url);

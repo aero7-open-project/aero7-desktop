@@ -42,12 +42,17 @@ Item {
 
     function beginAuth() {
         if(!authenticator.graceLocked && password.enabled) {
+            root.notification = "";
+            root.notificationIcon = "";
             authenticator.startAuthenticating();
             pageView.replaceCurrentItem(welcomePage);
         }
     }
 
     function showMessage(message: string, icon: string) {
+        // PAM can clear its message after emitting failed/busyChanged.
+        // Keep the actionable error until acknowledgement or a new attempt.
+        if (!message || !message.trim()) return;
         if(!statusPage.visible) {
             pageView.replaceCurrentItem(statusPage);
             k.forceActiveFocus();
@@ -102,12 +107,6 @@ Item {
             // If this is coming from the noninteractive authenticators
             if(kind != 0) return;
             showMessage(i18nd("kscreenlocker_greet", "The user name or password is incorrect."), "dialog-error");
-        }
-        function onBusyChanged() {
-            if(!authenticator.busy) {
-                root.notification = "";
-                root.notificationIcon = "";
-            }
         }
         function onInfoMessageChanged() {
             showMessage(authenticator.infoMessage, "dialog-information");
@@ -449,6 +448,8 @@ Item {
 
                         signal accepted()
                         onAccepted: {
+                            root.notification = "";
+                            root.notificationIcon = "";
                             pageView.replaceCurrentItem(mainPage);
                             root.resetFocus(true);
                         }

@@ -412,12 +412,12 @@ PlasmaCore.Dialog {
 			anchors.rightMargin: 2
 			anchors.bottomMargin: 2
 			gradient: Gradient {
-				GradientStop { position: 0.0; color: "#26000000" }
-				GradientStop { position: 0.11; color: "#53000000" }
-				GradientStop { position: 0.2775; color: "#82000000" }
-				GradientStop { position: 0.445; color: "#99000000" }
-				GradientStop { position: 0.51; color: "#99000000" }
-				GradientStop { position: 0.84; color: "#4f000000" }
+				GradientStop { position: 0.0; color: "#32162d43" }
+				GradientStop { position: 0.11; color: "#5b14283d" }
+				GradientStop { position: 0.2775; color: "#86132439" }
+				GradientStop { position: 0.445; color: "#9b112033" }
+				GradientStop { position: 0.51; color: "#9b112033" }
+				GradientStop { position: 0.84; color: "#56162a3e" }
 				GradientStop { position: 1.0; color: "#00000000" }
 			}
 			topLeftRadius: 8
@@ -1163,7 +1163,7 @@ PlasmaCore.Dialog {
 				size: iconSizeSide
 
 				KeyNavigation.tab: lockScreenDelegate
-				KeyNavigation.backtab: Qt.binding(() => { return leaveButtons.findUpItem(); });
+				KeyNavigation.backtab: leaveButtons.findUpItem()
 
 				Keys.onPressed: event => {
 					if(event.key == Qt.Key_Return) {

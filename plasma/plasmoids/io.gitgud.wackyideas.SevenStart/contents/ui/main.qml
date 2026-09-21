@@ -36,6 +36,13 @@ PlasmoidItem {
     signal reset
 
     property Item dragSource: null
+    // Plasma 6.7 can finish constructing the Kicker delegate models before
+    // this applet has been attached to its panel containment.  Giving Kicker
+    // the interface during that window lets its launcher-action code
+    // dereference a null Plasma::Applet containment and crashes plasmashell.
+    // Delay model activation until the next event-loop turn, when the applet
+    // and panel relationship is complete.
+    property bool containmentReady: false
 
     property alias rootModel: rootModel
     property QtObject globalFavorites: rootModel.favoritesModel
@@ -61,7 +68,8 @@ PlasmoidItem {
         "Qt Widgets Designer"
     ]
     readonly property var fullyHiddenApplicationNames: [
-        "Emoji Selector"
+        "Emoji Selector",
+        "System Settings"
     ]
 
     function normalizedApplicationName(value) {
@@ -96,6 +104,38 @@ PlasmoidItem {
         return normalizedApplicationName(name) === normalizedApplicationName(query);
     }
 
+    function sanitizedFavoriteApplications(values) {
+        const cleaned = [
+            "applications:org.aero7.fileexplorer.desktop",
+            "applications:linux-controlpanel.desktop"
+        ];
+        for (let index = 0; values && index < values.length; ++index) {
+            let favorite = String(values[index] || "");
+            const normalized = favorite.toLocaleLowerCase();
+            if (normalized.indexOf("systemsettings") !== -1) {
+                favorite = "applications:linux-controlpanel.desktop";
+            } else if (normalized.indexOf("dolphin") !== -1
+                       || normalized.indexOf("fileexplorer") !== -1) {
+                favorite = "applications:org.aero7.fileexplorer.desktop";
+            }
+            if (favorite && cleaned.indexOf(favorite) === -1) {
+                cleaned.push(favorite);
+            }
+        }
+        return cleaned;
+    }
+
+    function sanitizeFavoriteApplications() {
+        if (!globalFavorites || !globalFavorites.favorites) {
+            return;
+        }
+        const current = Array.from(globalFavorites.favorites);
+        const cleaned = sanitizedFavoriteApplications(current);
+        if (JSON.stringify(current) !== JSON.stringify(cleaned)) {
+            globalFavorites.favorites = cleaned;
+        }
+    }
+
     Plasmoid.constraintHints: Plasmoid.CanFillArea
     activationTogglesExpanded: false
 
@@ -103,7 +143,6 @@ PlasmoidItem {
     toolTipSubText: ""
 
     CompactRepresentation { id: compactRepresentation; anchors.fill: parent }
-    MenuRepresentation { id: menuRepresentation }
 
     // Used to run separate programs through this plasmoid.
     Plasma5Support.DataSource {
@@ -142,7 +181,7 @@ PlasmoidItem {
     Kicker.RunnerModel {
         id: runnerModel
 
-        appletInterface: kicker
+        appletInterface: kicker.containmentReady ? kicker : null
         favoritesModel: globalFavorites
         mergeResults: true
     }
@@ -155,7 +194,7 @@ PlasmoidItem {
         flat: true
         sorted: true
         showSeparators: false
-        appletInterface: kicker
+        appletInterface: kicker.containmentReady ? kicker : null
 
         paginate: false
         pageSize: Plasmoid.configuration.numberColumns *  Plasmoid.configuration.numberRows
@@ -198,6 +237,7 @@ PlasmoidItem {
             } else {
                 favoritesModel.favorites = Plasmoid.configuration.favoriteApps;
             }
+            Qt.callLater(kicker.sanitizeFavoriteApplications);
         }
     }
 
@@ -205,7 +245,13 @@ PlasmoidItem {
         target: globalFavorites
 
         function onFavoritesChanged() {
-            Plasmoid.configuration.favoriteApps = target.favorites;
+            const current = Array.from(target.favorites || []);
+            const cleaned = kicker.sanitizedFavoriteApplications(current);
+            if (JSON.stringify(current) !== JSON.stringify(cleaned)) {
+                target.favorites = cleaned;
+                return;
+            }
+            Plasmoid.configuration.favoriteApps = cleaned;
         }
     }
 
@@ -293,27 +339,28 @@ PlasmoidItem {
         kicker.hideOnWindowDeactivate = true;
     }
 
-    Plasmoid.contextualActions: [
-        PlasmaCore.Action {
-            text: i18n("Edit Applications...")
-            icon.name: "application-menu"
-            onTriggered:  menu_executable.exec("kstart kmenuedit");
-        },
-        PlasmaCore.Action {
-            text: i18n("Task Manager")
-            icon.name: "ksysguardd"
-            onTriggered: {
-                menu_executable.exec("kstart ksysguard");
+    function runShellAction(action) {
+        menu_executable.exec("aero7-shell-action " + action);
+    }
 
-            }
-        }
-    ]
+    // The orb has an Aero7-owned two-item context menu. Publishing applet
+    // contextual actions here lets the containment append Plasma's Configure,
+    // Alternatives and edit-mode actions, so expose none.
+    Plasmoid.contextualActions: []
 
     Component.onCompleted: {
         windowSystem.focusIn.connect(enableHideOnWindowDeactivate);
         kicker.hideOnWindowDeactivate = true;
 
         dragHelper.dropped.connect(resetDragSource);
+        containmentReadyTimer.start();
+    }
+
+    Timer {
+        id: containmentReadyTimer
+        interval: 250
+        repeat: false
+        onTriggered: kicker.containmentReady = true
     }
 
 }

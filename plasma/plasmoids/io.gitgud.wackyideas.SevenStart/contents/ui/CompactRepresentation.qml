@@ -86,6 +86,9 @@ Item {
         return url;
     }
     function positionOrb() {
+        if (!orb) {
+            return;
+        }
         var pos = kicker.mapToGlobal(floatingOrbPanel.x, floatingOrbPanel.y);
         pos.y -= 5;
         if(Plasmoid.configuration.offsetFloatingOrb) {
@@ -101,6 +104,9 @@ Item {
         orb.y = pos.y;
     }
     function showMenu() {
+        if (!dashWindow || !orb) {
+            return;
+        }
         dashWindow.visible = !dashWindow.visible;
         dashWindow.showingAllPrograms = false;
         if(KWindowSystem.isPlatformX11) Plasmoid.setActiveWin(dashWindow);
@@ -142,7 +148,7 @@ Item {
     //clip: true
 
     Component.onCompleted: {
-        dashWindow = Qt.createQmlObject("MenuRepresentation {}", kicker);
+        dashWindow = Qt.createQmlObject("MenuRepresentation { visible: false }", kicker);
         orb = Qt.createQmlObject("StartOrb {}", kicker);
 
         orbTimer.start();
@@ -213,15 +219,34 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         anchors.fill: parent
         hoverEnabled: true
-        propagateComposedEvents: true
+        propagateComposedEvents: false
 
         onPressed: mouse => {
-            if(mouse.button === Qt.LeftButton)
+            mouse.accepted = true;
+            if(mouse.button === Qt.LeftButton) {
                 showMenu();
-            else
-                mouse.accepted = false;
+            } else if (mouse.button === Qt.RightButton) {
+                startContextMenu.visualParent = mouseAreaCompositingOff;
+                startContextMenu.open(mouse.x, mouse.y);
+            }
         }
         z: 99
+    }
+
+    ActionMenu {
+        id: startContextMenu
+        actionList: [
+            {
+                text: i18n("Open Windows Explorer"),
+                icon: "system-file-manager",
+                action: () => kicker.runShellAction("explorer")
+            },
+            {
+                text: i18n("Properties"),
+                icon: "document-properties",
+                action: () => kicker.runShellAction("start-properties")
+            }
+        ]
     }
 
     // I hate this

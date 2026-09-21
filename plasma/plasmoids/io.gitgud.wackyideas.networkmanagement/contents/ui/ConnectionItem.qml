@@ -10,7 +10,6 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 import org.kde.coreaddons as KCoreAddons
-import org.kde.kcmutils as KCMUtils
 
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
@@ -145,7 +144,7 @@ ExpandableListItem {
         PlasmaExtras.MenuItem {
             text: i18n("Configure…")
             icon: "configure"
-            onClicked: KCMUtils.KCMLauncher.openSystemSettings(mainWindow.kcm, ["--args", "Uuid=" + Uuid])
+            onClicked: mainWindow.openNetworkSettings()
         }
     }
     contextualActions: [

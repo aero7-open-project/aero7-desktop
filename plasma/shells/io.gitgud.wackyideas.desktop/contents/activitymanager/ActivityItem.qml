@@ -11,12 +11,20 @@ import org.kde.plasma.activityswitcher as ActivitySwitcher
 import org.kde.kirigami 2.20 as Kirigami
 import Qt5Compat.GraphicalEffects
 
-import org.kde.kcmutils  // KCMLauncher
+import org.kde.plasma.plasma5support as Plasma5Support
 
 import "static.js" as S
 
 Item {
     id: root
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function openActivities() { connectSource("/usr/bin/control --setting activities") }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     component GlowText: Text {
         renderType: Text.NativeRendering
@@ -363,7 +371,7 @@ Item {
                 PlasmaComponents.ToolTip.visible: hovered
                 PlasmaComponents.ToolTip.text: i18nd("plasma_shell_org.kde.plasma.desktop", "Configure")
 
-                onClicked: KCMLauncher.openSystemSettings("kcm_activities", root.activityId);
+                onClicked: controlPanelLauncher.openActivities();
 
                 anchors {
                     left       : parent.left

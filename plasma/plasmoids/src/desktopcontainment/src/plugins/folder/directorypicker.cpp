@@ -6,8 +6,7 @@
 
 #include "directorypicker.h"
 
-#include <QFileDialog>
-#include <QStandardPaths>
+#include <QProcess>
 
 #include <KLocalizedString>
 
@@ -18,7 +17,7 @@ DirectoryPicker::DirectoryPicker(QObject *parent)
 
 DirectoryPicker::~DirectoryPicker()
 {
-    delete m_dialog;
+    delete m_dialogProcess;
 }
 
 QUrl DirectoryPicker::url() const
@@ -28,25 +27,27 @@ QUrl DirectoryPicker::url() const
 
 void DirectoryPicker::open()
 {
-    if (!m_dialog) {
-        m_dialog = new QFileDialog(nullptr, i18n("Select Folder"), QStandardPaths::standardLocations(QStandardPaths::HomeLocation).at(0));
-        m_dialog->setFileMode(QFileDialog::Directory);
-        m_dialog->setOption(QFileDialog::ShowDirsOnly, true);
-        connect(m_dialog, &QDialog::accepted, this, &DirectoryPicker::dialogAccepted);
+    if (m_dialogProcess && m_dialogProcess->state() != QProcess::NotRunning)
+        return;
+    if (!m_dialogProcess) {
+        m_dialogProcess = new QProcess(this);
+        connect(m_dialogProcess, qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
+                this, &DirectoryPicker::dialogAccepted);
     }
-
-    m_dialog->show();
-    m_dialog->raise();
-    m_dialog->activateWindow();
+    m_dialogProcess->setProgram(QStringLiteral("aero7-file-dialog"));
+    m_dialogProcess->setArguments({QStringLiteral("--mode"), QStringLiteral("folder"),
+                                   QStringLiteral("--app-id"), QStringLiteral("aero7-desktop-folder")});
+    m_dialogProcess->start();
 }
 
 void DirectoryPicker::dialogAccepted()
 {
-    const QList<QUrl> &urls = m_dialog->selectedUrls();
-
-    if (!urls.isEmpty()) {
-        m_url = urls.at(0);
-
+    if (!m_dialogProcess || m_dialogProcess->exitStatus() != QProcess::NormalExit
+        || m_dialogProcess->exitCode() != 0)
+        return;
+    const QString path = QString::fromUtf8(m_dialogProcess->readAllStandardOutput()).trimmed();
+    if (!path.isEmpty()) {
+        m_url = QUrl::fromLocalFile(path.section(QLatin1Char('\n'), 0, 0));
         Q_EMIT urlChanged();
     }
 }

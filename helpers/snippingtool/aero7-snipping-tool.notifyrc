@@ -1,0 +1,13 @@
+[Global]
+Name=Snipping Tool
+Comment=Aero7 screenshot notifications
+
+[Event/screenshotSaved]
+Name=Screenshot saved
+Comment=A screenshot was saved and copied to the clipboard
+Action=Popup
+
+[Event/screenshotFailed]
+Name=Snipping Tool
+Comment=A screenshot could not be captured
+Action=Popup

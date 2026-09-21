@@ -57,12 +57,12 @@ Item {
     TapHandler {
         id: tapHandler
         enabled: !delegate.pendingUninstall && model.isSupported
-        onDoubleTapped: widgetExplorer.addApplet(delegate.pluginName)
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (eventPoint, button) => {
-            if(button == Qt.LeftButton)
+            if(button == Qt.LeftButton) {
                 delegate.GridView.view.currentIndex = index;
-            else if(button == Qt.RightButton) {
+                widgetExplorer.addApplet(delegate.pluginName);
+            } else if(button == Qt.RightButton) {
                 widgetsOptions.visualParent = delegate;
                 widgetsOptions.openRelative();
             }

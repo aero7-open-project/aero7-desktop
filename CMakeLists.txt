@@ -15,12 +15,16 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(FeatureSummary)
 find_package(KF6Config)
+find_package(KF6GuiAddons REQUIRED)
+find_package(KF6GlobalAccel REQUIRED)
+find_package(KF6Notifications REQUIRED)
 find_package(Plasma)
+find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui Widgets)
 
 add_subdirectory(plasma)
+add_subdirectory(helpers)
 if(NOT INSTALL_X11_COMPONENTS)
     add_subdirectory(misc)
 endif()
 
 install()
-

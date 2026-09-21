@@ -75,6 +75,13 @@ Item {
     readonly property int minPanelHeight: translucentItem.minimumDrawingHeight
     readonly property int minPanelWidth: translucentItem.minimumDrawingWidth
 
+    // PanelView reads these offsets and their notify signals when calculating
+    // shadow padding and screen-edge borders, including floating transitions.
+    readonly property real topShadowMargin: -floatingTranslucentItem.y
+    readonly property real leftShadowMargin: -floatingTranslucentItem.x
+    readonly property real rightShadowMargin: -(width - floatingTranslucentItem.width - floatingTranslucentItem.x)
+    readonly property real bottomShadowMargin: -(height - floatingTranslucentItem.height - floatingTranslucentItem.y)
+
     TaskManager.VirtualDesktopInfo {
         id: virtualDesktopInfo
     }

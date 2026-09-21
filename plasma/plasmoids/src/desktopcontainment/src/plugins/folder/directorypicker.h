@@ -10,7 +10,7 @@
 #include <QUrl>
 #include <qqmlregistration.h>
 
-class QFileDialog;
+class QProcess;
 
 class DirectoryPicker : public QObject
 {
@@ -34,6 +34,6 @@ private Q_SLOTS:
     void dialogAccepted();
 
 private:
-    QFileDialog *m_dialog = nullptr;
+    QProcess *m_dialogProcess = nullptr;
     QUrl m_url;
 };

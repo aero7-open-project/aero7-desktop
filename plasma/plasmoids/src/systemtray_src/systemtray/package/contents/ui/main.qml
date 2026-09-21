@@ -128,7 +128,7 @@ ContainmentItem {
                 if(write) writeToConfig();
             }
             function getItemOrder(id) {
-                if(typeof orderObject[id] === "undefined") return -1;
+                if(!orderObject || typeof orderObject[id] === "undefined") return -1;
                 return orderObject[id];
             }
             function writeToConfig() {
@@ -161,7 +161,10 @@ ContainmentItem {
             id: activeModel
             model: KItemModels.KSortFilterProxyModel {
                 id: shownItemsModel
-                sourceModel: Plasmoid.systemTrayModel
+                sourceModel: null
+                Component.onCompleted: Qt.callLater(function() {
+                    shownItemsModel.sourceModel = Plasmoid.systemTrayModel
+                })
                 filterRoleName: "effectiveStatus"
 
                 filterRowCallback: (sourceRow, sourceParent) => {
@@ -334,7 +337,7 @@ ContainmentItem {
             property bool firstTimePopup: false
 
             hideOnWindowDeactivate: !Plasmoid.configuration.pin
-            visible: systemTrayState.expanded
+            visible: systemTrayState.expanded && root.hiddenLayout.itemCount > 0
             appletInterface: root
 
             backgroundHints: expandedRepresentation.useTransparentFlyout ? PlasmaCore.Dialog.StandardBackground : PlasmaCore.Dialog.SolidBackground

@@ -26,7 +26,6 @@ import QtQuick.Layouts as QtLayouts
 import QtQuick.Dialogs as QtDialogs
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
-import org.kde.kcmutils // For KCMLauncher
 import org.kde.config // For KAuthorized
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.workspace.calendar as PlasmaCalendar

@@ -30,113 +30,52 @@ function fillActionMenu(i18n, actionMenu, actionList, favoriteModel, favoriteId)
     actionMenu.actionList = actionList;
 }
 
+function aeroActionList(i18n, sourceActions, openAction) {
+    var blocked = [
+        "add widgets", "manage widgets", "edit mode", "enter edit mode",
+        "configure panel", "configure taskbar", "configure task manager",
+        "show alternatives", "edit application", "kde menu editor",
+        "add to desktop", "add to panel", "add to task manager",
+        "remove from desktop", "remove from panel",
+        "remove panel", "remove this panel"
+    ];
+    var result = [{
+        text: i18n("Open"),
+        icon: "document-open",
+        action: openAction
+    }];
+    (sourceActions || []).forEach(function (item) {
+        var text = String(item.text || "").replace(/&/g, "").trim().toLowerCase();
+        for (var index = 0; index < blocked.length; ++index) {
+            if (text.indexOf(blocked[index]) !== -1)
+                return;
+        }
+        if (item.subActions)
+            item.subActions = aeroActionList(i18n, item.subActions, openAction).slice(1);
+        result.push(item);
+    });
+    return result;
+}
+
 function createFavoriteActions(i18n, favoriteModel, favoriteId) {
     if (!favoriteModel || !favoriteModel.enabled || !favoriteId) {
         return null;
     }
 
-
-    if (favoriteModel.activities === undefined ||
-        favoriteModel.activities?.runningActivities?.length <= 1) {
-        var action = {};
-
-        if (favoriteModel.isFavorite(favoriteId)) {
-            action.text = i18n("Unpin from Start Menu");
-            //action.icon = "pin";
-            action.actionId = "_kicker_favorite_remove";
-        } else if (favoriteModel.maxFavorites === -1 || favoriteModel.count < favoriteModel.maxFavorites) {
-            action.text = i18n("Pin to Start Menu");
-            //action.icon = "bookmark-new";
-            action.actionId = "_kicker_favorite_add";
-        } else {
-            return null;
-        }
-
-        action.actionArgument = { favoriteModel: favoriteModel, favoriteId: favoriteId };
-
-        return [action];
-
+    var action = {};
+    if (favoriteModel.isFavorite(favoriteId)) {
+        action.text = i18n("Unpin from Start Menu");
+        action.icon = "list-remove";
+        action.actionId = "_kicker_favorite_remove";
+    } else if (favoriteModel.maxFavorites === -1 || favoriteModel.count < favoriteModel.maxFavorites) {
+        action.text = i18n("Pin to Start Menu");
+        action.icon = "bookmark-new";
+        action.actionId = "_kicker_favorite_add";
     } else {
-            var actions = [];
-
-            var linkedActivities = favoriteModel.linkedActivitiesFor(favoriteId);
-
-            var activities = favoriteModel.activities.runningActivities;
-
-            // Adding the item to link/unlink to all activities
-
-            var linkedToAllActivities =
-            !(linkedActivities.indexOf(":global") === -1);
-
-            actions.push({
-                text      : i18n("On All Activities"),
-                         checkable : true,
-
-                         actionId  : linkedToAllActivities ?
-                         "_kicker_favorite_remove_from_activity" :
-                         "_kicker_favorite_set_to_activity",
-                         checked   : linkedToAllActivities,
-
-                         actionArgument : {
-                             favoriteModel: favoriteModel,
-                         favoriteId: favoriteId,
-                         favoriteActivity: ""
-                         }
-            });
-
-
-            // Adding items for each activity separately
-
-            var addActivityItem = function(activityId, activityName) {
-                var linkedToThisActivity =
-                !(linkedActivities.indexOf(activityId) === -1);
-
-                actions.push({
-                    text      : activityName,
-                    checkable : true,
-                    checked   : linkedToThisActivity && !linkedToAllActivities,
-
-                    actionId :
-                    // If we are on all activities, and the user clicks just one
-                    // specific activity, unlink from everything else
-                    linkedToAllActivities ? "_kicker_favorite_set_to_activity" :
-
-                    // If we are linked to the current activity, just unlink from
-                    // that single one
-                    linkedToThisActivity ? "_kicker_favorite_remove_from_activity" :
-
-                    // Otherwise, link to this activity, but do not unlink from
-                    // other ones
-                    "_kicker_favorite_add_to_activity",
-
-                    actionArgument : {
-                        favoriteModel    : favoriteModel,
-                        favoriteId       : favoriteId,
-                        favoriteActivity : activityId
-                    }
-                });
-            };
-
-            // Adding the item to link/unlink to the current activity
-
-            addActivityItem(favoriteModel.activities.currentActivity, i18n("On the Current Activity"));
-
-            actions.push({
-                type: "separator",
-                actionId: "_kicker_favorite_separator"
-            });
-
-            // Adding the items for each activity
-
-            activities?.forEach(function(activityId) {
-                addActivityItem(activityId, favoriteModel.activityNameForId(activityId));
-            });
-
-            return [{
-                text       : i18n("Pin to Start Menu"),
-                subActions : actions
-            }];
-        }
+        return null;
+    }
+    action.actionArgument = { favoriteModel: favoriteModel, favoriteId: favoriteId };
+    return [action];
 }
 
 function triggerAction(model, index, actionId, actionArgument) {

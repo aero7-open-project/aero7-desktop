@@ -27,5 +27,6 @@ kwin/effects_cpp/minimize3d/build-wl
 kwin/effects_cpp/minimize3d
 experimental/
 build
+build-*/
 repos
 manifest

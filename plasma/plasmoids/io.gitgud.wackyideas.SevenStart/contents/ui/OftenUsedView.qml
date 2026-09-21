@@ -106,8 +106,73 @@ Item {
             function trigger(index, str, ptr) {
                 sourceModel.trigger(index, str, ptr);
             }
+            function normalizedName(value) {
+                return String(value || "").trim().toLocaleLowerCase();
+            }
+            function canonicalLauncher(value) {
+                let launcher = normalizedName(value);
+                if (launcher.indexOf("applications:") === 0) {
+                    launcher = launcher.substring(13);
+                }
+                if (launcher.indexOf("dolphin") !== -1
+                        || launcher.indexOf("fileexplorer") !== -1) {
+                    return "file-explorer";
+                }
+                if (launcher.indexOf("systemsettings") !== -1
+                        || launcher.indexOf("linux-controlpanel") !== -1) {
+                    return "control-panel";
+                }
+                return launcher;
+            }
+            function isPinnedLauncher(favoriteId, displayName) {
+                let launcher = canonicalLauncher(favoriteId);
+                if (!launcher && normalizedName(displayName) === "file explorer") {
+                    launcher = "file-explorer";
+                }
+                if (!launcher) {
+                    return false;
+                }
+                const favorites = Array.from(globalFavorites.favorites || []);
+                for (let index = 0; index < favorites.length; ++index) {
+                    if (canonicalLauncher(favorites[index]) === launcher) {
+                        return true;
+                    }
+                }
+                return false;
+            }
             filterRowCallback: function(source_row, source_parent) {
-                return source_row < Plasmoid.configuration.numberRows// - sourceModel.favoritesModel.count;
+                if (source_row >= Plasmoid.configuration.numberRows) {
+                    return false;
+                }
+                const sourceIndex = sourceModel.index(source_row, 0, source_parent);
+                const displayName = sourceModel.data(sourceIndex, 0);
+                if (kicker.isFullyHiddenApplication(displayName)) {
+                    return false;
+                }
+                // File Explorer is a mandatory Windows 7-style pinned item,
+                // so never repeat it in the activity-history section.
+                if (normalizedName(displayName) === "file explorer") {
+                    return false;
+                }
+                // A Windows 7 Start menu never repeats a pinned application in
+                // the frequently-used section immediately below it.
+                const favoriteIdRole = sourceModel.KItemModels.KRoleNames.role("favoriteId");
+                const favoriteId = String(sourceModel.data(sourceIndex, favoriteIdRole) || "");
+                if (isPinnedLauncher(favoriteId, displayName)) {
+                    return false;
+                }
+
+                // Activity history can contain the same desktop application
+                // through multiple launcher IDs. Keep only its first row.
+                const normalizedDisplayName = normalizedName(displayName);
+                for (let row = 0; row < source_row; ++row) {
+                    const earlierIndex = sourceModel.index(row, 0, source_parent);
+                    if (normalizedName(sourceModel.data(earlierIndex, 0))
+                            === normalizedDisplayName) {
+                        return false;
+                    }
+                }
+                return true;
             };
 
         }

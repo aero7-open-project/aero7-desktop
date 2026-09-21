@@ -11,7 +11,7 @@ import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.ksvg 1.0 as KSvg
 import org.kde.kirigami 2.20 as Kirigami
 
-import org.kde.kcmutils  // KCMLauncher
+import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.config  // KAuthorized
 
 import org.kde.plasma.activityswitcher as ActivitySwitcher
@@ -20,6 +20,14 @@ import "static.js" as S
 
 Item {
     id: root
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function openActivities() { connectSource("/usr/bin/control --setting activities") }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     property int innerPadding: Kirigami.Units.smallSpacing
 
@@ -137,7 +145,7 @@ Item {
                 PlasmaComponents.ToolTip.visible: hovered
                 PlasmaComponents.ToolTip.text: i18nd("plasma_shell_org.kde.plasma.desktop", "Configure activity")
 
-                onClicked: KCMLauncher.openSystemSettings("kcm_activities", root.activityId)
+                onClicked: controlPanelLauncher.openActivities()
 
                 anchors {
                     right       : deleteButton.left
@@ -186,5 +194,4 @@ Item {
         }
     ]
 }
-
 

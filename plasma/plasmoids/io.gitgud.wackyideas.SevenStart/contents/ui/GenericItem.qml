@@ -59,7 +59,10 @@ Item {
   }
 
   onAboutToShowActionMenu: actionMenu => {
-    var actionList = allItem.hasActionList ? model.actionList : [];
+    var actionList = Tools.aeroActionList(
+        i18n,
+        allItem.hasActionList ? Array.from(model.actionList) : [],
+        () => allItem.trigger());
     if(model.favoriteId) { // If we have a launchable application, try allowing the user to pin it
       // Find seventasks instance, if available
       const entry = model.favoriteId; //kicker.convertUrl(model.url);

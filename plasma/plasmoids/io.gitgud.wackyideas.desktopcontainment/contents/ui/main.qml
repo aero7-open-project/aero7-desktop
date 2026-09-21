@@ -11,6 +11,7 @@ import QtQuick.Layouts 1.15
 
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.ksvg 1.0 as KSvg
 import org.kde.kquickcontrolsaddons 2.0 as KQuickControlsAddons
 import org.kde.kirigami 2.20 as Kirigami
@@ -23,6 +24,19 @@ import "code/FolderTools.js" as FolderTools
 
 ContainmentItem {
     id: root
+
+    function launchControlSetting(setting) {
+        controlPanelLauncher.exec("/usr/bin/control --setting " + setting)
+    }
+
+    function enforceAero7NoEditMode() {
+        if (appletsLayout?.editMode) {
+            appletsLayout.editMode = false;
+        }
+        if (Plasmoid.containment?.corona?.editMode) {
+            Plasmoid.containment.corona.editMode = false;
+        }
+    }
 
     switchWidth: { switchSize(); }
     switchHeight: { switchSize(); }
@@ -276,7 +290,7 @@ ContainmentItem {
             ignoreUnknownSignals: true
 
             function onEditModeChanged() {
-                appletsLayout.editMode = Plasmoid.containment.corona.editMode;
+                root.enforceAero7NoEditMode();
             }
         }
 
@@ -290,12 +304,16 @@ ContainmentItem {
 
             containment: Plasmoid
             containmentItem: root
-            editModeCondition: Plasmoid.immutable
-                    ? ContainmentLayoutManager.AppletsLayout.Locked
-                    : ContainmentLayoutManager.AppletsLayout.AfterPressAndHold
+            editModeCondition: ContainmentLayoutManager.AppletsLayout.Locked
 
-            // Sets the containment in edit mode when we go in edit mode as well
-            onEditModeChanged: Plasmoid.containment.corona.editMode = editMode;
+            onEditModeChanged: {
+                if (editMode) {
+                    editMode = false;
+                }
+                root.enforceAero7NoEditMode();
+            }
+
+            Component.onCompleted: Qt.callLater(root.enforceAero7NoEditMode)
 
             minimumItemWidth: Kirigami.Units.iconSizes.small * 3
             minimumItemHeight: minimumItemWidth
@@ -310,11 +328,15 @@ ContainmentItem {
             appletContainerComponent: ContainmentLayoutManager.BasicAppletContainer {
                 id: appletContainer
 
-                editModeCondition: Plasmoid.immutable
-                    ? ContainmentLayoutManager.ItemContainer.Locked
-                    : ContainmentLayoutManager.ItemContainer.AfterPressAndHold
+                editModeCondition: ContainmentLayoutManager.ItemContainer.Manual
 
-                configOverlaySource: "ConfigOverlay.qml"
+                configOverlaySource: "NoEditOverlay.qml"
+
+                onEditModeChanged: {
+                    if (editMode) {
+                        editMode = false;
+                    }
+                }
 
                 onAppletChanged: {
                     applet.visible = true
@@ -400,7 +422,17 @@ ContainmentItem {
             text: i18n("Personalize")
             icon.name: "preferences-desktop-wallpaper"
             shortcut: "alt+d,alt+s"
-            onTriggered: Plasmoid.containment.configureRequested(Plasmoid)
+            onTriggered: root.launchControlSetting("personalization")
+        }
+
+        Plasma5Support.DataSource {
+            id: controlPanelLauncher
+            engine: "executable"
+            connectedSources: []
+            function exec(command) {
+                connectSource(command)
+            }
+            onNewData: (sourceName, data) => disconnectSource(sourceName)
         }
 
         Component.onCompleted: {
@@ -409,6 +441,12 @@ ContainmentItem {
             }
 
             Plasmoid.setInternalAction("configure", configAction)
+            const editAction = Plasmoid.internalAction("desktop edit mode")
+            if (editAction) {
+                editAction.visible = false
+                editAction.enabled = false
+            }
+            root.enforceAero7NoEditMode()
         }
     }
 }

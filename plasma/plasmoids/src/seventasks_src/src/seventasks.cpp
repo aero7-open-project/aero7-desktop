@@ -4,17 +4,24 @@
 */
 
 #include "seventasks.h"
+#include "aero7tasksmodel.h"
 #include <kwindowsystem.h>
 #include <kwindowinfo.h>
 #include <kx11extras.h>
 
 SevenTasks::SevenTasks(QObject *parentObject, const KPluginMetaData &data, const QVariantList &args)
     : Plasma::Applet(parentObject, data, args)
+    , m_aeroTasksModel(new Aero7TasksModel(this))
 {
 }
 
 SevenTasks::~SevenTasks()
 {
+}
+
+Aero7TasksModel *SevenTasks::aeroTasksModel() const
+{
+    return m_aeroTasksModel;
 }
 
 

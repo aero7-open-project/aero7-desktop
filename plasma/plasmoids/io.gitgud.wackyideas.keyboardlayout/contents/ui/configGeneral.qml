@@ -13,9 +13,18 @@ import org.kde.plasma.workspace.keyboardlayout 1.0
 import org.kde.plasma.workspace.components 2.0 as WorkspaceComponents
 import org.kde.plasma.private.kcm_keyboard as KCMKeyboard
 import org.kde.kcmutils
+import org.kde.plasma.plasma5support as Plasma5Support
 
 SimpleKCM {
     id: root
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function openKeyboard() { connectSource("/usr/bin/control --setting keyboard") }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     property int cfg_displayStyle
 
@@ -110,7 +119,7 @@ SimpleKCM {
             Kirigami.FormData.label: i18n("Layouts:")
             text: i18n("Configure…")
             icon.name: "configure"
-            onClicked: KCMLauncher.openSystemSettings("kcm_keyboard", "--tab=layouts")
+            onClicked: controlPanelLauncher.openKeyboard()
         }
 
         Component.onCompleted: {

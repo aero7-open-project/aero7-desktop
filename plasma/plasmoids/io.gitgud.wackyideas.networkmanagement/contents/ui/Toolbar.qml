@@ -12,7 +12,6 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.kirigami 2.20 as Kirigami
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.plasma.networkmanagement as PlasmaNM
-import org.kde.kcmutils as KCMUtils
 import QtQuick.Controls 2.15 as QQC2
 import org.kde.ksvg 1.0 as KSvg
 
@@ -234,7 +233,7 @@ ColumnLayout {
         }
 
         onClicked: {
-            KCMUtils.KCMLauncher.openSystemSettings(mainWindow.kcm)
+            mainWindow.openNetworkSettings()
         }
     }
 }

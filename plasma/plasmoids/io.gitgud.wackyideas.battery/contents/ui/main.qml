@@ -12,10 +12,10 @@ import QtQuick
 import QtQuick.Layouts
 
 import org.kde.coreaddons as KCoreAddons
-import org.kde.kcmutils as KCMUtils
 import org.kde.config as KConfig
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.kirigami as Kirigami
 import org.kde.kitemmodels as KItemModels
 
@@ -24,6 +24,16 @@ import org.kde.plasma.private.battery
 
 PlasmoidItem {
     id: batterymonitor
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function open(setting) {
+            connectSource("/usr/bin/control --setting " + setting)
+        }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     PowerProfilesControl {
         id: powerProfilesControl
@@ -314,7 +324,7 @@ PlasmoidItem {
             text: i18n("&Show Energy Information…")
             icon.name: "documentinfo"
             visible: batterymonitor.kcmEnergyInformationAuthorized
-            onTriggered: checked => KCMUtils.KCMLauncher.openInfoCenter("kcm_energyinfo")
+            onTriggered: checked => controlPanelLauncher.open("power")
         }
     ]
 
@@ -323,7 +333,7 @@ PlasmoidItem {
         text: i18n("&Configure Power Management…")
         icon.name: "configure"
         onTriggered: checked => {
-            KCMUtils.KCMLauncher.openSystemSettings("kcm_powerdevilprofilesconfig");
+            controlPanelLauncher.open("power");
         }
     }
 

@@ -25,13 +25,17 @@
 #include <kx11extras.h>
 #include <kwindoweffects.h>
 
+class Aero7TasksModel;
+
 class SevenTasks : public Plasma::Applet
 {
     Q_OBJECT
+    Q_PROPERTY(Aero7TasksModel *aeroTasksModel READ aeroTasksModel CONSTANT)
 
 public:
     SevenTasks(QObject *parentObject, const KPluginMetaData &data, const QVariantList &args);
     ~SevenTasks();
+    Aero7TasksModel *aeroTasksModel() const;
     Q_INVOKABLE QColor getDominantColor(QVariant src);
     Q_INVOKABLE bool isActiveWindow(int wid);
     Q_INVOKABLE QRect getWindowAspectRatio(int wid);
@@ -121,6 +125,9 @@ protected:
     }
 Q_SIGNALS:
     void mouseEventDetected();
+
+private:
+    Aero7TasksModel *m_aeroTasksModel = nullptr;
 };
 
 #endif

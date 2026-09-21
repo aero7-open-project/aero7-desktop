@@ -17,8 +17,7 @@ import org.kde.plasma.components as PC3
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
-import org.kde.kcmutils as KCMUtils
-import org.kde.config as KConfig
+import org.kde.plasma.plasma5support as Plasma5Support
 
 import org.kde.plasma.private.volume
 
@@ -31,9 +30,9 @@ PlasmoidItem {
         id: config
     }
 
-    property bool volumeFeedback: config.audioFeedback
-    property bool globalMute: config.globalMute
-    property bool globalMuteSources: config.globalMuteSources
+    property bool volumeFeedback: !!config.audioFeedback
+    property bool globalMute: !!config.globalMute
+    property bool globalMuteSources: !!config.globalMuteSources
     property string displayName: i18n("Audio Volume")
     property QtObject draggedStream: null
     property QtObject mixerWindow: null
@@ -254,7 +253,9 @@ PlasmoidItem {
     fullRepresentation: Item {
         id: fullRep
 
-        property int flyoutIntendedWidth: mainLayout.width
+        readonly property bool hasAudioDevices: paSinkFilterModelDefault.count > 0 || paSourceFilterModelDefault.count > 0
+        property int flyoutIntendedWidth: hasAudioDevices ? Math.max(mainLayout.implicitWidth, 96) : 272
+        implicitWidth: flyoutIntendedWidth
 
         function overrideFunction() {
             if(!mixerWindow) {
@@ -272,10 +273,21 @@ PlasmoidItem {
         implicitHeight: 217
         property int listWidth: 34
 
+        PC3.Label {
+            id: noDeviceMessage
+            anchors.centerIn: parent
+            width: Math.min(parent.width - Kirigami.Units.largeSpacing * 4, implicitWidth)
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            text: i18n("No audio output or input devices were found. Connect a device or open Sound settings.")
+            visible: !fullRep.hasAudioDevices
+        }
+
         property list<string> hiddenTypes: []
 
         RowLayout {
             id: mainLayout
+            visible: fullRep.hasAudioDevices
 
             property int defaultInputWidth: {
                 if(defaultInput.visible) return (separator.width + separator.anchors.leftMargin)
@@ -343,6 +355,13 @@ PlasmoidItem {
         }
     }
 
+    PlasmaCore.Action {
+        id: configureAction
+        text: i18n("Open &Sound settings…")
+        icon.name: "configure"
+        onTriggered: controlPanelLauncher.exec("/usr/bin/control --setting sound")
+    }
+
     Plasmoid.contextualActions: [
         PlasmaCore.Action {
             text: i18n("Open Volume Mixer")
@@ -384,21 +403,25 @@ PlasmoidItem {
             checkable: true
             checked: plasmoid.configuration.showVirtualDevices
             onTriggered: Plasmoid.configuration.showVirtualDevices = !Plasmoid.configuration.showVirtualDevices
-        },
-        PlasmaCore.Action {     // Move this here so that the action stays visible, thus retaining functionality, you should probably change these somewhat closer to what Win 7 and Vista have here
-            id: configureAction
-            text: i18n("&Configure Audio Devices…")
-            icon.name: "configure"
-            visible: KConfig.KAuthorized.authorizeControlModule("kcm_pulseaudio")
-            onTriggered: KCMUtils.KCMLauncher.openSystemSettings("kcm_pulseaudio")
         }
     ]
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function exec(command) {
+            connectSource(command)
+        }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     Component.onCompleted: {
         MicrophoneIndicator.init();
 
-        // This is important, comment out or remove this line entirely as this prevents the internal KCM from loading
-        //Plasmoid.setInternalAction("configure", configureAction);
+        // Keep the shell's standard configure slot, but route it to Aero7's
+        // Control Panel instead of exposing the Plasma applet configuration.
+        Plasmoid.setInternalAction("configure", configureAction);
 
         // migrate settings if they aren't default
         // this needs to be done per instance of the applet

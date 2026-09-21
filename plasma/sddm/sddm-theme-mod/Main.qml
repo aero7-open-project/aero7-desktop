@@ -22,6 +22,8 @@ Item
     property bool m_forceUserSelect: config.boolValue("forceUserSelect")
     property bool m_biggerUserFrame: config.boolValue("biggerUserFrame")
     property bool m_biggerMultiUserFrame: config.boolValue("biggerMultiUserFrame")
+    property bool highContrastEnabled: false
+    property bool magnifierEnabled: false
 
     enum LoginPage
     {
@@ -67,7 +69,7 @@ Item
     }
 
     Rectangle {
-        color: "#1D5F7A"
+        color: root.highContrastEnabled ? "#000000" : "#1D5F7A"
         anchors.fill: parent
     }
 
@@ -76,6 +78,7 @@ Item
         anchors.fill: parent
         fillMode: Image.Stretch
         source: Qt.resolvedUrl("background")
+        visible: !root.highContrastEnabled
     }
 
     Timer {
@@ -238,8 +241,7 @@ Item
                 }
             }
 
-            Keys.onReturnPressed:
-            {
+            Keys.onReturnPressed: function(event) {
                 if (focus)
                 {
                     let username = model.name
@@ -252,7 +254,7 @@ Item
 
                         if (needspassword)
                         {
-                            userNameLabel.text = realname
+                            userNameLabel.text = realname || username
                             avatar.source = pic
 
                             listView.currentIndex = index
@@ -280,27 +282,24 @@ Item
             rightMargin: Kirigami.Units.gridUnit*12
         }
         function showHide() {
-            active = !active;
-            inputPanel.item.activated = Qt.binding(() => { return active });
+            setActive(!active)
+        }
+        function setActive(wanted) {
+            active = wanted
+            if (inputPanel.item) {
+                inputPanel.item.activated = wanted
+            }
+            if (wanted) {
+                password.forceActiveFocus()
+                Qt.inputMethod.show()
+            } else {
+                Qt.inputMethod.hide()
+            }
         }
         Component.onCompleted: {
             inputPanel.source = Qt.platform.pluginName.includes("wayland") ? "SMOD/VirtualKeyboard_wayland.qml" : "SMOD/VirtualKeyboard.qml"
-
-            if(inputPanel.status === Loader.Ready) {
-                var menuitem = session.createMenuSeparator();
-
-                session.addItem(menuitem);
-                menuitem = session.createMenuItem();
-                menuitem.text = i18nd("aerothemeplasma-sddm-theme", "On-Screen Keyboard")
-                menuitem.checkable = false;
-                menuitem.icon.source = Qt.resolvedUrl("Assets/keyboard.png");
-                menuitem.triggered.connect(() => {
-                    password.forceActiveFocus();
-                    inputPanel.showHide();
-                });
-                session.addAction(menuitem);
-            }
         }
+        onStatusChanged: if (status === Loader.Ready && item) item.activated = active
         onKeyboardActiveChanged: {
             if (keyboardActive) {
                 inputPanel.z = 99;
@@ -315,11 +314,72 @@ Item
 
     }
 
+    Plasma5Support.DataSource {
+        id: accessibilityBackend
+        engine: "executable"
+        connectedSources: []
+        property string action: ""
+        property bool closeAfterApply: false
+
+        function run(command, requestedAction, closeWhenDone) {
+            action = requestedAction
+            closeAfterApply = closeWhenDone
+            connectSource(command)
+        }
+
+        function query() {
+            run("/usr/bin/aero7-sddm-accessibility status", "status", false)
+        }
+
+        function apply(closeWhenDone) {
+            const narrator = narratorCheck.checked ? "1" : "0"
+            const sticky = stickyKeysCheck.checked ? "1" : "0"
+            const filter = filterKeysCheck.checked ? "1" : "0"
+            run("/usr/bin/aero7-sddm-accessibility apply " + narrator + " " + sticky + " " + filter,
+                "apply", closeWhenDone)
+        }
+
+        onNewData: (sourceName, data) => {
+            disconnectSource(sourceName)
+            let reply
+            try {
+                reply = JSON.parse(data["stdout"])
+            } catch (error) {
+                accessStatus.text = i18nd("aerothemeplasma-sddm-theme", "Accessibility settings could not be read.")
+                return
+            }
+
+            if (!reply.success) {
+                accessStatus.text = reply.error || i18nd("aerothemeplasma-sddm-theme", "Accessibility settings could not be applied.")
+                return
+            }
+
+            if (action === "status") {
+                narratorCheck.checked = reply.narrator
+                narratorCheck.enabled = reply.narratorAvailable
+                stickyKeysCheck.checked = reply.stickyKeys
+                filterKeysCheck.checked = reply.filterKeys
+                if (!reply.narratorAvailable) {
+                    accessStatus.text = i18nd("aerothemeplasma-sddm-theme", "Narrator is unavailable because Orca is not installed.")
+                } else {
+                    accessStatus.text = ""
+                }
+            } else {
+                accessDialog.applyLocalSettings()
+                accessStatus.text = i18nd("aerothemeplasma-sddm-theme", "Accessibility settings applied.")
+                if (closeAfterApply) {
+                    accessDialog.close()
+                }
+            }
+        }
+    }
+
     StackLayout
     {
         id: pages
         anchors.fill: parent
         anchors.bottomMargin: inputPanel.active ? inputPanel.height : 0
+        scale: root.magnifierEnabled ? 1.18 : 1.0
 
         onCurrentIndexChanged:
         {
@@ -395,7 +455,7 @@ Item
                     let userDisplayName = userModel.data(userModel.index(index, 0), Main.UserRoles.RealNameRole)
                     let userPicture = userModel.data(userModel.index(index, 0), Main.UserRoles.IconRole)
 
-                    userNameLabel.text = userDisplayName
+                    userNameLabel.text = userDisplayName || username
                     avatar.source = userPicture
 
                     pages.currentIndex = Main.LoginPage.Login
@@ -501,7 +561,7 @@ Item
 
                             if (needspassword)
                             {
-                                userNameLabel.text = realname == "" ? username : realname;
+                                userNameLabel.text = realname || username;
                                 avatar.source = pic
 
                                 listView.currentIndex = index
@@ -840,8 +900,7 @@ Item
                     pages.currentIndex = Main.LoginPage.SelectUser
                 }
 
-                Keys.onReturnPressed:
-                {
+                Keys.onReturnPressed: function(event) {
                     clicked()
                     event.accepted = true
                 }
@@ -956,8 +1015,7 @@ Item
                     pages.currentIndex = Main.LoginPage.Login
                 }
 
-                Keys.onReturnPressed:
-                {
+                Keys.onReturnPressed: function(event) {
                     clicked()
                     event.accepted = true
                 }
@@ -995,11 +1053,293 @@ Item
             KeyNavigation.tab: pages.currentIndex === Main.LoginPage.SelectUser ? listView : password
             KeyNavigation.down: pages.currentIndex === Main.LoginPage.SelectUser ? listView : password
 
-            text: keyboard.layouts[currentIndex].shortName
-            onClicked: currentIndex = (currentIndex + 1) % keyboard.layouts.length
+            text: keyboard.layouts && currentIndex >= 0 && currentIndex < keyboard.layouts.length
+                ? keyboard.layouts[currentIndex].shortName : ""
+            onClicked: {
+                if (!keyboard.layouts || keyboard.layouts.length === 0) {
+                    currentIndex = 0
+                    return
+                }
+                if (currentIndex < 0 || currentIndex >= keyboard.layouts.length) {
+                    currentIndex = 0
+                    return
+                }
+                currentIndex = (currentIndex + 1) % keyboard.layouts.length
+            }
 
             visible: keyboard.layouts.length > 1 && pages.currentIndex != Main.LoginPage.Startup
         }
+
+    Item {
+        id: accessDialog
+        // Keep the Windows-style dialog outside the magnified login-page
+        // transform.  Without this explicit visual parent, enabling Magnifier
+        // reflows QQC2 controls inside the scaled StackLayout and collapses
+        // their labels to single characters.
+        parent: root
+        anchors.fill: parent
+        z: 200
+        visible: false
+        focus: visible
+
+        property bool pendingHighContrast: false
+        property bool pendingMagnifier: false
+        property bool pendingKeyboard: false
+
+        function open() {
+            pendingHighContrast = root.highContrastEnabled
+            pendingMagnifier = root.magnifierEnabled
+            pendingKeyboard = inputPanel.active
+            desktopEnvironmentCombo.index = session.index
+            accessStatus.text = i18nd("aerothemeplasma-sddm-theme", "Reading accessibility settings…")
+            visible = true
+            forceActiveFocus()
+            narratorCheck.forceActiveFocus()
+            accessibilityBackend.query()
+        }
+
+        function close() {
+            visible = false
+            accessbutton.checked = false
+            if (inputPanel.active) {
+                // Closing the dialog used to move focus away from the password
+                // field and make Qt hide the keyboard that the user had just
+                // enabled. Restore both after the checked-state callback has
+                // completed so the keyboard remains usable for sign-in.
+                password.forceActiveFocus()
+                Qt.callLater(function() { inputPanel.setActive(true) })
+            } else {
+                accessbutton.forceActiveFocus()
+            }
+        }
+
+        function applyLocalSettings() {
+            root.highContrastEnabled = pendingHighContrast
+            root.magnifierEnabled = pendingMagnifier
+            inputPanel.setActive(pendingKeyboard)
+            session.index = desktopEnvironmentCombo.index
+            session.valueChanged(session.index)
+        }
+
+        Keys.onEscapePressed: (event) => {
+            close()
+            event.accepted = true
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: accessDialog.close()
+        }
+
+        Rectangle {
+            id: accessDialogWindow
+            width: Math.min(560, parent.width - 40)
+            height: Math.min(575, parent.height - 40)
+            anchors.centerIn: parent
+            color: "#f6f6f6"
+            border.color: "#586f84"
+            border.width: 1
+            radius: 2
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: (mouse) => mouse.accepted = true
+            }
+
+            Rectangle {
+                id: accessTitleBar
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: 34
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#e7f3ff" }
+                    GradientStop { position: 1.0; color: "#a9c7e4" }
+                }
+                border.color: "#7d9db9"
+
+                Image {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 22
+                    height: 22
+                    source: "Assets/12213.png"
+                    smooth: false
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 36
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: i18nd("aerothemeplasma-sddm-theme", "Ease of Access")
+                    color: "#15202b"
+                    font.pixelSize: 13
+                    renderType: Text.NativeRendering
+                }
+
+                QQC2.Button {
+                    width: 46
+                    height: 25
+                    anchors.right: parent.right
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "×"
+                    onClicked: accessDialog.close()
+                    Accessible.name: i18nd("aerothemeplasma-sddm-theme", "Close")
+                }
+            }
+
+            ColumnLayout {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: accessTitleBar.bottom
+                anchors.bottom: buttonArea.top
+                anchors.margins: 22
+                spacing: 6
+
+                Text {
+                    text: i18nd("aerothemeplasma-sddm-theme", "Make your computer easier to use")
+                    color: "#003399"
+                    font.pixelSize: 18
+                    Layout.fillWidth: true
+                    renderType: Text.NativeRendering
+                }
+
+                Text {
+                    text: i18nd("aerothemeplasma-sddm-theme", "Press SPACEBAR to select the highlighted option.")
+                    color: "#202020"
+                    font.pixelSize: 12
+                    Layout.fillWidth: true
+                    renderType: Text.NativeRendering
+                }
+
+                QQC2.CheckBox {
+                    id: narratorCheck
+                    text: i18nd("aerothemeplasma-sddm-theme", "Hear text on screen read aloud (Narrator)")
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: magnifierCheck
+                }
+
+                QQC2.CheckBox {
+                    id: magnifierCheck
+                    text: i18nd("aerothemeplasma-sddm-theme", "Make items on the screen larger (Magnifier)")
+                    checked: accessDialog.pendingMagnifier
+                    onToggled: accessDialog.pendingMagnifier = checked
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: highContrastCheck
+                }
+
+                QQC2.CheckBox {
+                    id: highContrastCheck
+                    text: i18nd("aerothemeplasma-sddm-theme", "See more contrast in colors (High Contrast)")
+                    checked: accessDialog.pendingHighContrast
+                    onToggled: accessDialog.pendingHighContrast = checked
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: onScreenKeyboardCheck
+                }
+
+                QQC2.CheckBox {
+                    id: onScreenKeyboardCheck
+                    text: i18nd("aerothemeplasma-sddm-theme", "Type without the keyboard (On-Screen Keyboard)")
+                    checked: accessDialog.pendingKeyboard
+                    onToggled: accessDialog.pendingKeyboard = checked
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: stickyKeysCheck
+                }
+
+                QQC2.CheckBox {
+                    id: stickyKeysCheck
+                    text: i18nd("aerothemeplasma-sddm-theme", "Press keyboard shortcuts one key at a time (Sticky Keys)")
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: filterKeysCheck
+                }
+
+                QQC2.CheckBox {
+                    id: filterKeysCheck
+                    text: i18nd("aerothemeplasma-sddm-theme", "Ignore brief or repeated keystrokes (Filter Keys)")
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: desktopEnvironmentCombo
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: "#b7b7b7"
+                    Layout.topMargin: 4
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Text {
+                        text: i18nd("aerothemeplasma-sddm-theme", "Desktop environment:")
+                        color: "#202020"
+                        font.pixelSize: 12
+                        renderType: Text.NativeRendering
+                    }
+                    SMOD.ComboBox {
+                        id: desktopEnvironmentCombo
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 28
+                        model: sessionModel
+                        index: session.index
+                        arrowIcon: Qt.resolvedUrl("Assets/power-glyph-arrow.png")
+                        KeyNavigation.tab: accessOkButton
+                    }
+                }
+
+                Text {
+                    id: accessStatus
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    wrapMode: Text.WordWrap
+                    color: "#7b1f1f"
+                    font.pixelSize: 11
+                    renderType: Text.NativeRendering
+                }
+            }
+
+            Rectangle {
+                id: buttonArea
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 52
+                color: "#ececec"
+                border.color: "#d2d2d2"
+
+                Row {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 14
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+
+                    QQC2.Button {
+                        id: accessOkButton
+                        width: 82
+                        text: i18nd("aerothemeplasma-sddm-theme", "OK")
+                        onClicked: accessibilityBackend.apply(true)
+                        KeyNavigation.tab: accessCancelButton
+                    }
+                    QQC2.Button {
+                        id: accessCancelButton
+                        width: 82
+                        text: i18nd("aerothemeplasma-sddm-theme", "Cancel")
+                        onClicked: accessDialog.close()
+                        KeyNavigation.tab: accessApplyButton
+                    }
+                    QQC2.Button {
+                        id: accessApplyButton
+                        width: 82
+                        text: i18nd("aerothemeplasma-sddm-theme", "Apply")
+                        onClicked: accessibilityBackend.apply(false)
+                        KeyNavigation.tab: narratorCheck
+                    }
+                }
+            }
+        }
+    }
+
     QQC2.CheckBox
     {
         id: accessbutton
@@ -1046,15 +1386,14 @@ Item
             }
         }
 
-        enabled: !session.visible
+        enabled: !accessDialog.visible
         onToggled:
         {
-            if(session.visible) session.close();
-            else session.open();
+            if (checked) accessDialog.open()
+            else accessDialog.close()
         }
 
-        Keys.onReturnPressed:
-        {
+        Keys.onReturnPressed: function(event) {
             clicked()
             event.accepted = true
         }
@@ -1099,6 +1438,7 @@ Item
 
         SMOD.Menu {
             id: session
+            visible: false
             x: 0
             y: -session.height + accessbutton.height + session.verticalPadding
             index: sessionModel.lastIndex
@@ -1183,8 +1523,7 @@ Item
 
             onClicked : sddm.powerOff()
 
-            Keys.onReturnPressed:
-            {
+            Keys.onReturnPressed: function(event) {
                 clicked()
                 event.accepted = true
             }

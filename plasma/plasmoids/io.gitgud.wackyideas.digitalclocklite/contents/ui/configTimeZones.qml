@@ -8,16 +8,23 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 
-import org.kde.kquickcontrolsaddons  // For kcmshell
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.digitalclock
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.plasma5support as Plasma5Support
 
 import org.kde.kcmutils as KCMUtils
-import org.kde.config // KAuthorized
 
 KCMUtils.ScrollViewKCM {
     id: timeZonesPage
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function openDateTime() { connectSource("/usr/bin/control --setting date-time") }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
 
     property alias cfg_selectedTimeZones: timeZones.selectedTimeZones
     property alias cfg_wheelChangesTimezone: enableWheelCheckBox.checked
@@ -101,11 +108,11 @@ KCMUtils.ScrollViewKCM {
                 }
 
                 QQC2.Button {
-                    visible: model.isLocalTimeZone && KAuthorized.authorizeControlModule("kcm_clock.desktop")
+                    visible: model.isLocalTimeZone
                     text: i18n("Switch Systemwide Time Zone…")
                     icon.name: "preferences-system-time"
                     font.bold: false
-                    onClicked: KCMUtils.KCMLauncher.openSystemSettings("kcm_clock")
+                    onClicked: controlPanelLauncher.openDateTime()
                 }
 
                 QQC2.Button {

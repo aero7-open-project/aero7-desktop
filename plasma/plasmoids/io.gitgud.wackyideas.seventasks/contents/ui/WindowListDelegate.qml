@@ -29,20 +29,21 @@ MouseArea {
     property var minimized: model.IsMinimized
 
     implicitWidth: captionIcon.width + captionTitle.implicitWidth + 14 + Kirigami.Units.largeSpacing*8
-    onImplicitWidthChanged: ListView.view.updateMaxSize()
+    onImplicitWidthChanged: if (ListView.view) Qt.callLater(ListView.view.updateMaxSize)
 
     implicitHeight: 33 + Kirigami.Units.smallSpacing*4
 
     width: {
-        if(ListView.view.maxThumbnailItem !== thumbnailRoot)
-            return ListView.view.maxThumbnailWidth;
+        if (ListView.view)
+            return Math.max(implicitWidth, ListView.view.maxThumbnailWidth);
         else
             return implicitWidth;
     }
 
     function closeTask() {
+        // This component is only used for grouped overflow rows. Keep the
+        // popup open for surviving windows; there is no single-window mode.
         tasksModel.requestClose(modelIndex);
-        if(!isGroupDelegate) root.parentTask.hideImmediately();
     }
     hoverEnabled: true
     propagateComposedEvents: true
@@ -62,7 +63,7 @@ MouseArea {
             prefix: "attention"
 
             visible: demandsAttention
-            opacity: root.parentTask.attentionAnimOpacity
+            opacity: root.parentTask ? root.parentTask.attentionAnimOpacity : 0
         }
 
         KSvg.FrameSvgItem {
@@ -87,7 +88,7 @@ MouseArea {
                 else return "hover";
             }
 
-            opacity: contentMa.containsMouse || closeMa.containsMouse || (!tasks.iconsOnly && root.taskHovered && !isGroupDelegate)
+            opacity: contentMa.containsMouse || closeMa.containsMouse
 
             Behavior on opacity {
                 NumberAnimation { duration: 250 }
@@ -251,5 +252,5 @@ MouseArea {
         }
     }
 
-    Component.onDestruction: ListView.view.updateMaxSize()
+    Component.onDestruction: if (ListView.view) Qt.callLater(ListView.view.updateMaxSize)
 }

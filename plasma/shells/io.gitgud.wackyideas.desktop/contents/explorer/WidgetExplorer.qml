@@ -196,11 +196,7 @@ PC3.Page {
     QQC2.Action {
         shortcut: "Escape"
         onTriggered: {
-            if (searchInput.length > 0) {
-                searchInput.text = ""
-            } else {
-                main.closed()
-            }
+            main.closed()
         }
     }
 
@@ -226,7 +222,7 @@ PC3.Page {
                 height: 1
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.top: anchors.top
+                anchors.top: parent.top
                 color: "#dfdfdf"
             }
         }
@@ -463,6 +459,8 @@ PC3.Page {
                 }
                 PC3.TextField {
                     id: searchInput
+                    text: "Aero7"
+                    readOnly: true
                     focus: false
                     Layout.fillWidth: true
                     Layout.maximumWidth: 201
@@ -503,7 +501,9 @@ PC3.Page {
                         }
                     }
                     onTextChanged: {
-                        widgetExplorer.widgetsModel.searchTerm = text
+                        if (widgetExplorer) {
+                            widgetExplorer.widgetsModel.searchTerm = "Aero7"
+                        }
                         pageSwitcher.pageIndex = 0;
                         list.positionViewAtBeginning()
                         list.currentIndex = list.count ? 0 : -1
@@ -520,10 +520,7 @@ PC3.Page {
                         width: filterWidgets.width
                         z: 99
                         hoverEnabled: true
-                        onClicked: {
-                            categoriesDialog.model = widgetExplorer.filterModel
-                            categoriesDialog.openRelative();
-                        }
+                        enabled: false
                     }
 
 
@@ -667,6 +664,7 @@ PC3.Page {
 
             RowLayout {
                 id: installFromLocal
+                visible: false
 
                 anchors.right: morePlasmoidsLink.left
                 anchors.top: parent.top
@@ -694,6 +692,7 @@ PC3.Page {
             }
             RowLayout {
                 id: morePlasmoidsLink
+                visible: false
 
                 anchors.right: parent.right
                 anchors.top: parent.top
@@ -724,7 +723,12 @@ PC3.Page {
         id: setModelTimer
         interval: 20
         running: true
-        onTriggered: list.model = widgetExplorer.widgetsModel
+        onTriggered: {
+            widgetExplorer.widgetsModel.filterQuery = ""
+            widgetExplorer.widgetsModel.filterType = ""
+            widgetExplorer.widgetsModel.searchTerm = "Aero7"
+            list.model = widgetExplorer.widgetsModel
+        }
     }
 
     Rectangle {

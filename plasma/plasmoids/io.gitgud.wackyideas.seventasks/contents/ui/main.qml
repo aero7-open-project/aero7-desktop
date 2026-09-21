@@ -260,8 +260,8 @@ PlasmoidItem {
     }
 
     function taskInLauncherList(launcher) {
-        for(var i = 0; i < tasksModel.launcherList.length; i++) {
-            if(tasksModel.launcherList[i].includes(launcher)) {
+        for(var i = 0; i < tasksModel.shellLauncherList.length; i++) {
+            if(tasksModel.shellLauncherList[i].includes(launcher)) {
                 return true;
             }
         }
@@ -279,86 +279,63 @@ PlasmoidItem {
 
     property Item taskThumbnail: ToolTip {  }
 
-    property TaskManager.TasksModel tasksModel: TaskManager.TasksModel {
-        id: tasksModel
+    property var tasksModel: Plasmoid.aeroTasksModel
 
-        readonly property int logicalLauncherCount: {
-            if (Plasmoid.configuration.separateLaunchers) {
-                return launcherCount;
-            }
-
-            var startupsWithLaunchers = 0;
-
-            for(var i = 0; i < tasksModel.count; ++i) {
-                var item = taskList.itemAtIndex(i);
-
-                if (item?.model?.IsStartup && item.model.HasLauncher) {
-                    ++startupsWithLaunchers;
-                }
-            }
-            return launcherCount + startupsWithLaunchers;
+    readonly property int logicalLauncherCount: {
+        if (Plasmoid.configuration.separateLaunchers) {
+            return tasksModel.launcherCount;
         }
-
-        virtualDesktop: virtualDesktopInfo.currentDesktop
-        screenGeometry: Plasmoid.containment.screenGeometry
-        activity: activityInfo.currentActivity
-
-        filterByVirtualDesktop: Plasmoid.configuration.showOnlyCurrentDesktop
-        filterByScreen: Plasmoid.configuration.showOnlyCurrentScreen
-        filterByActivity: Plasmoid.configuration.showOnlyCurrentActivity
-        filterNotMinimized: Plasmoid.configuration.showOnlyMinimized
-
-        hideActivatedLaunchers: true //tasks.iconsOnly || Plasmoid.configuration.hideLauncherOnStart
-        sortMode: sortModeEnumValue(Plasmoid.configuration.sortingStrategy)
-        launchInPlace: tasks.iconsOnly && Plasmoid.configuration.sortingStrategy === 1
-        separateLaunchers: false
-        groupMode: Plasmoid.configuration.groupPopups ? TaskManager.TasksModel.GroupApplications : TaskManager.TasksModel.GroupDisabled
-        groupInline: !Plasmoid.configuration.groupPopups && !tasks.iconsOnly
-        groupingWindowTasksThreshold: (Plasmoid.configuration.onlyGroupWhenFull && !tasks.iconsOnly
-            ? LayoutMetrics.optimumCapacity(width, height) + 1 : -1)
-
-        onLauncherListChanged: {
-            Plasmoid.configuration.launchers = launcherList;
-        }
-
-        onGroupingAppIdBlacklistChanged: {
-            Plasmoid.configuration.groupingAppIdBlacklist = groupingAppIdBlacklist;
-        }
-
-        onGroupingLauncherUrlBlacklistChanged: {
-            Plasmoid.configuration.groupingLauncherUrlBlacklist = groupingLauncherUrlBlacklist;
-        }
-
-        function sortModeEnumValue(index) {
-            switch (index) {
-                case 0:
-                    return TaskManager.TasksModel.SortDisabled;
-                case 1:
-                    return TaskManager.TasksModel.SortManual;
-                case 2:
-                    return TaskManager.TasksModel.SortAlpha;
-                case 3:
-                    return TaskManager.TasksModel.SortVirtualDesktop;
-                case 4:
-                    return TaskManager.TasksModel.SortActivity;
-                default:
-                    return TaskManager.TasksModel.SortDisabled;
+        var startupsWithLaunchers = 0;
+        for(var i = 0; i < tasksModel.count; ++i) {
+            var item = taskList.itemAtIndex(i);
+            if (item?.model?.IsStartup && item.model.HasLauncher) {
+                ++startupsWithLaunchers;
             }
         }
+        return tasksModel.launcherCount + startupsWithLaunchers;
+    }
 
-        function groupModeEnumValue(index) {
-            switch (index) {
-                case 0:
-                    return TaskManager.TasksModel.GroupDisabled;
-                case 1:
-                    return TaskManager.TasksModel.GroupApplications;
-            }
+    function sortModeEnumValue(index) {
+        switch (index) {
+        case 0: return TaskManager.TasksModel.SortDisabled;
+        case 1: return TaskManager.TasksModel.SortManual;
+        case 2: return TaskManager.TasksModel.SortAlpha;
+        case 3: return TaskManager.TasksModel.SortVirtualDesktop;
+        case 4: return TaskManager.TasksModel.SortActivity;
+        default: return TaskManager.TasksModel.SortDisabled;
         }
+    }
 
-        Component.onCompleted: {
-            launcherList = Plasmoid.configuration.launchers;
-            groupingAppIdBlacklist = Plasmoid.configuration.groupingAppIdBlacklist;
-            groupingLauncherUrlBlacklist = Plasmoid.configuration.groupingLauncherUrlBlacklist;
+    Binding { target: tasksModel; property: "virtualDesktop"; value: virtualDesktopInfo.currentDesktop }
+    Binding { target: tasksModel; property: "screenGeometry"; value: Plasmoid.containment.screenGeometry }
+    Binding { target: tasksModel; property: "activity"; value: activityInfo.currentActivity }
+    Binding { target: tasksModel; property: "filterByVirtualDesktop"; value: Plasmoid.configuration.showOnlyCurrentDesktop }
+    Binding { target: tasksModel; property: "filterByScreen"; value: Plasmoid.configuration.showOnlyCurrentScreen }
+    Binding { target: tasksModel; property: "filterByActivity"; value: Plasmoid.configuration.showOnlyCurrentActivity }
+    Binding { target: tasksModel; property: "filterNotMinimized"; value: Plasmoid.configuration.showOnlyMinimized }
+    Binding { target: tasksModel; property: "hideActivatedLaunchers"; value: true }
+    Binding { target: tasksModel; property: "sortMode"; value: tasks.sortModeEnumValue(Plasmoid.configuration.sortingStrategy) }
+    Binding { target: tasksModel; property: "launchInPlace"; value: tasks.iconsOnly && Plasmoid.configuration.sortingStrategy === 1 }
+    Binding { target: tasksModel; property: "separateLaunchers"; value: false }
+    Binding { target: tasksModel; property: "groupMode"; value: Plasmoid.configuration.groupPopups ? TaskManager.TasksModel.GroupApplications : TaskManager.TasksModel.GroupDisabled }
+    Binding { target: tasksModel; property: "groupInline"; value: !Plasmoid.configuration.groupPopups && !tasks.iconsOnly }
+    Binding {
+        target: tasksModel
+        property: "groupingWindowTasksThreshold"
+        value: Plasmoid.configuration.onlyGroupWhenFull && !tasks.iconsOnly
+            ? LayoutMetrics.optimumCapacity(width, height) + 1 : -1
+    }
+
+    Connections {
+        target: tasksModel
+        function onShellLauncherListChanged() {
+            Plasmoid.configuration.launchers = tasksModel.shellLauncherList;
+        }
+        function onGroupingAppIdBlacklistChanged() {
+            Plasmoid.configuration.groupingAppIdBlacklist = tasksModel.groupingAppIdBlacklist;
+        }
+        function onGroupingLauncherUrlBlacklistChanged() {
+            Plasmoid.configuration.groupingLauncherUrlBlacklist = tasksModel.groupingLauncherUrlBlacklist;
         }
     }
 
@@ -457,7 +434,7 @@ PlasmoidItem {
             target: Plasmoid.configuration
 
             function onLaunchersChanged() {
-                tasksModel.launcherList = Plasmoid.configuration.launchers
+                tasksModel.shellLauncherList = Plasmoid.configuration.launchers
             }
             function onGroupingAppIdBlacklistChanged() {
                 tasksModel.groupingAppIdBlacklist = Plasmoid.configuration.groupingAppIdBlacklist;
@@ -613,6 +590,9 @@ PlasmoidItem {
 
     Component.onCompleted: {
         TaskTools.taskManagerInstanceCount += 1;
+        tasksModel.shellLauncherList = Plasmoid.configuration.launchers;
+        tasksModel.groupingAppIdBlacklist = Plasmoid.configuration.groupingAppIdBlacklist;
+        tasksModel.groupingLauncherUrlBlacklist = Plasmoid.configuration.groupingLauncherUrlBlacklist;
         tasks.requestLayout.connect(iconGeometryTimer.restart);
         //tasks.windowsHovered.connect(backend.windowsHovered);
         //tasks.activateWindowView.connect(backend.activateWindowView);

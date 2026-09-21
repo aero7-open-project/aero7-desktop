@@ -8,11 +8,10 @@ import QtQuick 2.2
 import org.kde.plasma.plasmoid 2.0
 import org.kde.kirigami 2.20 as Kirigami
 import org.kde.plasma.core 2.0 as PlasmaCore
+import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.networkmanager as NMQt
 import QtQuick.Layouts 1.1
-import org.kde.kcmutils as KCMUtils
-import org.kde.config as KConfig
 
 PlasmoidItem {
     id: mainWindow
@@ -57,8 +56,6 @@ PlasmoidItem {
 
     property PlasmaNM.NetworkModel connectionModel: null
     property alias nmhandler: handler
-    readonly property string kcm: "kcm_networkmanagement"
-    readonly property bool kcmAuthorized: KConfig.KAuthorized.authorizeControlModule("kcm_networkmanagement")
     readonly property bool delayModelUpdates: fullRepresentationItem !== null
         && fullRepresentationItem.connectionModel !== null
         && fullRepresentationItem.connectionModel.delayModelUpdates
@@ -68,6 +65,10 @@ PlasmoidItem {
         || Plasmoid.location === PlasmaCore.Types.BottomEdge
         || Plasmoid.location === PlasmaCore.Types.LeftEdge)
     property alias planeModeSwitchAction: planeAction
+
+    function openNetworkSettings() {
+        controlPanelLauncher.exec("/usr/bin/control --setting network-connections")
+    }
 
     Plasmoid.title: "Open Network and Sharing Center"
     toolTipMainText: i18n("Networks")
@@ -193,11 +194,20 @@ PlasmoidItem {
 
     PlasmaCore.Action {
         id: configureAction
-        text: i18n("&Configure Network Connections…")
+        text: i18n("Open Network and Sharing Center…")
         icon.name: "configure"
-        visible: kcmAuthorized
         shortcut: "alt+d, s"
-        onTriggered: KCMUtils.KCMLauncher.openSystemSettings(kcm)
+        onTriggered: controlPanelLauncher.exec("/usr/bin/control --setting network-status")
+    }
+
+    Plasma5Support.DataSource {
+        id: controlPanelLauncher
+        engine: "executable"
+        connectedSources: []
+        function exec(command) {
+            connectSource(command)
+        }
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
     }
 
     Component.onCompleted: {
