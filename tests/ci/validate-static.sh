@@ -24,7 +24,7 @@ fi
 node --check kwin/scripts/aero7shake/contents/code/main.js
 node --check kwin/scripts/aero7snap/contents/code/main.js
 
-desktop-file-validate packaging/applications/*.desktop packaging/session/*.desktop
+desktop-file-validate packaging/session/*.desktop tests/visual/*.desktop
 
 python - <<'PY'
 import json

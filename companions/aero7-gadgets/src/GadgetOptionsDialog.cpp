@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFile>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -28,9 +29,23 @@
 #include <QUrlQuery>
 
 #include <utility>
+#include <cmath>
 
 namespace {
 struct FeedEntry { QString name; QString url; };
+constexpr qint64 maximumFeedCatalogBytes = 1024 * 1024;
+
+void showLookupStatus(QLabel *label, const QString &message)
+{
+    label->setText(message);
+    label->show();
+    auto *dialog = label->window();
+    // A newly shown wrapped label otherwise gets squeezed into the old dialog
+    // height. Lay out its actual width before reserving enough text height.
+    if (dialog->layout()) dialog->layout()->activate();
+    label->setMinimumHeight(qMax(0, label->heightForWidth(label->width())));
+    dialog->adjustSize();
+}
 
 QString feedsPath()
 {
@@ -39,49 +54,86 @@ QString feedsPath()
     return directory + QStringLiteral("/feeds.json");
 }
 
-QList<FeedEntry> loadFeeds()
+bool validFeedAddress(const QString &url)
 {
+    const QUrl parsed(url, QUrl::StrictMode);
+    return parsed.isValid() && !parsed.host().isEmpty()
+        && (parsed.scheme() == QStringLiteral("http") || parsed.scheme() == QStringLiteral("https"));
+}
+
+QList<FeedEntry> loadFeeds(QString *loadError = nullptr)
+{
+    if (loadError) loadError->clear();
     QList<FeedEntry> feeds;
     QFile file(feedsPath());
-    if (file.open(QIODevice::ReadOnly)) {
-        for (const QJsonValue value : QJsonDocument::fromJson(file.readAll()).array()) {
-            const QJsonObject item = value.toObject();
-            const QString name = item.value(QStringLiteral("name")).toString();
-            const QString url = item.value(QStringLiteral("url")).toString();
-            if (!name.isEmpty() && !url.isEmpty()) feeds << FeedEntry{name, url};
-        }
-    }
-    if (feeds.isEmpty()) {
-        feeds = {
+    const QFileInfo info(file);
+    // Defaults belong only to first use. A damaged existing catalog must never
+    // become an editable fallback that overwrites the user's original bytes.
+    if (!info.exists() && !info.isSymLink()) {
+        return {
             {QStringLiteral("Aero7 Releases"), QStringLiteral("https://github.com/memegeko/aero7-repo/releases.atom")},
             {QStringLiteral("Arch Linux News"), QStringLiteral("https://archlinux.org/feeds/news/")},
             {QStringLiteral("KDE News"), QStringLiteral("https://kde.org/announcements/index.xml")},
         };
     }
+    const auto fail = [loadError](const QString &reason) -> QList<FeedEntry> {
+        if (loadError) *loadError = QStringLiteral("The saved feed list could not be loaded. %1 The original file has not been changed. Restore or repair feeds.json, then select Try Again.").arg(reason);
+        return {};
+    };
+    if (!info.isFile() || !file.open(QIODevice::ReadOnly))
+        return fail(QStringLiteral("Check that the configuration file is readable."));
+    const auto bytes = file.read(maximumFeedCatalogBytes + 1);
+    if (file.error() != QFileDevice::NoError)
+        return fail(QStringLiteral("The configuration file could not be read completely."));
+    if (bytes.size() > maximumFeedCatalogBytes)
+        return fail(QStringLiteral("The configuration file exceeds the 1 MiB limit."));
+    QJsonParseError error;
+    const auto document = QJsonDocument::fromJson(bytes, &error);
+    if (error.error != QJsonParseError::NoError || !document.isArray())
+        return fail(QStringLiteral("The configuration is not a valid feed-list document."));
+    for (const QJsonValue value : document.array()) {
+        const QJsonObject item = value.toObject();
+        const QString name = item.value(QStringLiteral("name")).toString();
+        const QString url = item.value(QStringLiteral("url")).toString();
+        if (!value.isObject() || name.trimmed().isEmpty() || !validFeedAddress(url))
+            return fail(QStringLiteral("The configuration contains an invalid feed entry."));
+        feeds << FeedEntry{name, url};
+    }
+    // A saved empty catalog is an explicit choice, not first-run setup.
     return feeds;
 }
 
-void saveFeeds(const QList<FeedEntry> &feeds)
+bool saveFeeds(const QList<FeedEntry> &feeds)
 {
     QJsonArray array;
     for (const FeedEntry &feed : feeds) array.append(QJsonObject{{QStringLiteral("name"), feed.name}, {QStringLiteral("url"), feed.url}});
     QSaveFile file(feedsPath());
-    if (file.open(QIODevice::WriteOnly)) { file.write(QJsonDocument(array).toJson(QJsonDocument::Indented)); file.commit(); }
+    const auto bytes = QJsonDocument(array).toJson(QJsonDocument::Indented);
+    return bytes.size() <= maximumFeedCatalogBytes && file.open(QIODevice::WriteOnly)
+        && file.write(bytes) == bytes.size() && file.commit();
 }
 
 class FeedManagerDialog final : public QDialog
 {
 public:
-    explicit FeedManagerDialog(QWidget *parent = nullptr) : QDialog(parent), m_feeds(loadFeeds())
+    explicit FeedManagerDialog(QWidget *parent = nullptr) : QDialog(parent)
     {
+        m_feeds = loadFeeds(&m_loadError);
         setWindowTitle(QStringLiteral("Manage Feeds")); setMinimumSize(440, 290);
         auto *layout = new QVBoxLayout(this);
         layout->addWidget(new QLabel(QStringLiteral("Feeds available to the Feed Headlines gadget:"), this));
         m_list = new QListWidget(this); layout->addWidget(m_list, 1); rebuild();
+        m_saveStatus = new QLabel(this);
+        m_saveStatus->setObjectName(QStringLiteral("feedSaveStatus"));
+        m_saveStatus->setWordWrap(true);
+        m_saveStatus->hide();
+        layout->addWidget(m_saveStatus);
         auto *row = new QHBoxLayout;
-        auto *add = new QPushButton(QStringLiteral("Add..."), this);
-        auto *remove = new QPushButton(QStringLiteral("Remove"), this);
+        auto *add = m_add = new QPushButton(QStringLiteral("Add..."), this);
+        auto *remove = m_remove = new QPushButton(QStringLiteral("Remove"), this);
+        m_retry = new QPushButton(QStringLiteral("Try Again"), this);
         row->addWidget(add); row->addWidget(remove); row->addStretch(); layout->addLayout(row);
+        row->addWidget(m_retry);
         auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this); layout->addWidget(buttons);
         connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::accept);
         connect(add, &QPushButton::clicked, this, [this]() {
@@ -89,26 +141,75 @@ public:
             const QString name = QInputDialog::getText(this, QStringLiteral("Add Feed"), QStringLiteral("Name:"), QLineEdit::Normal, {}, &ok).trimmed();
             if (!ok || name.isEmpty()) return;
             const QString url = QInputDialog::getText(this, QStringLiteral("Add Feed"), QStringLiteral("RSS or Atom URL:"), QLineEdit::Normal, QStringLiteral("https://"), &ok).trimmed();
-            const QUrl parsed = QUrl::fromUserInput(url);
-            if (!ok || (parsed.scheme() != QStringLiteral("http") && parsed.scheme() != QStringLiteral("https"))) return;
-            m_feeds << FeedEntry{name, parsed.toString()}; saveFeeds(m_feeds); rebuild();
+            if (!ok) return;
+            // Do not reinterpret malformed explicit URLs as another host/path.
+            const QUrl parsed(url, QUrl::StrictMode);
+            if (!validFeedAddress(url)) {
+                showLookupStatus(m_saveStatus, QStringLiteral("Could not add feed. Enter a valid HTTP or HTTPS feed address with a host name. No changes were made."));
+                return;
+            }
+            auto updated = m_feeds;
+            updated << FeedEntry{name, parsed.toString()};
+            persist(updated);
         });
         connect(remove, &QPushButton::clicked, this, [this]() {
             const int row = m_list->currentRow(); if (row < 0 || row >= m_feeds.size()) return;
-            m_feeds.removeAt(row); saveFeeds(m_feeds); rebuild();
+            auto updated = m_feeds;
+            updated.removeAt(row);
+            persist(updated);
         });
+        connect(m_retry, &QPushButton::clicked, this, [this]() {
+            m_feeds = loadFeeds(&m_loadError);
+            rebuild();
+            showLoadState();
+        });
+        showLoadState();
     }
 private:
+    void showLoadState()
+    {
+        const bool loaded = m_loadError.isEmpty();
+        m_add->setEnabled(loaded);
+        m_remove->setEnabled(loaded);
+        m_retry->setVisible(!loaded);
+        if (!loaded) {
+            showLookupStatus(m_saveStatus, m_loadError);
+        } else {
+            m_saveStatus->clear();
+            m_saveStatus->hide();
+            m_saveStatus->setMinimumHeight(0);
+        }
+    }
+    void persist(const QList<FeedEntry> &updated)
+    {
+        if (!m_loadError.isEmpty()) return;
+        if (!saveFeeds(updated)) {
+            showLookupStatus(m_saveStatus, QStringLiteral("Could not save feeds. Check write permissions and free space, and keep the feed list below 1 MiB. No changes were made."));
+            return;
+        }
+        m_feeds = updated;
+        m_saveStatus->clear();
+        m_saveStatus->hide();
+        m_saveStatus->setMinimumHeight(0);
+        rebuild();
+    }
     void rebuild() { m_list->clear(); for (const FeedEntry &feed : std::as_const(m_feeds)) { auto *item = new QListWidgetItem(feed.name + QStringLiteral("\n") + feed.url, m_list); item->setToolTip(feed.url); } if (m_list->count()) m_list->setCurrentRow(0); }
     QList<FeedEntry> m_feeds;
+    QString m_loadError;
     QListWidget *m_list = nullptr;
+    QLabel *m_saveStatus = nullptr;
+    QPushButton *m_add = nullptr;
+    QPushButton *m_remove = nullptr;
+    QPushButton *m_retry = nullptr;
 };
 }
 
-GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, const QJsonObject &settings, QWidget *parent)
+GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, const QJsonObject &settings, QWidget *parent,
+                                       QNetworkAccessManager *lookupNetwork)
     : QDialog(parent)
     , m_definition(definition)
     , m_original(settings)
+    , m_lookupNetwork(lookupNetwork)
 {
     setWindowTitle(m_definition.name + QStringLiteral(" Options"));
     setModal(true);
@@ -154,7 +255,10 @@ GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, con
         timezone->setEditable(true); timezone->setInsertPolicy(QComboBox::NoInsert);
         addCheck(QStringLiteral("seconds"), QStringLiteral("Show second hand"), true);
     } else if (id.endsWith(QStringLiteral("calendar"))) {
-        addCombo(QStringLiteral("firstDay"), QStringLiteral("First day of week:"), {QStringLiteral("Monday"), QStringLiteral("Sunday")}, QStringLiteral("Monday"));
+        auto *firstDay = addCombo(QStringLiteral("firstDay"), QStringLiteral("First day of week:"),
+                                  {QStringLiteral("Monday"), QStringLiteral("Sunday")}, QStringLiteral("Monday"));
+        // The saved setting is an ISO weekday number, not the displayed label.
+        firstDay->setCurrentIndex(settings.value(QStringLiteral("firstDay")).toInt(1) == 7 ? 1 : 0);
         addCheck(QStringLiteral("highlightToday"), QStringLiteral("Highlight today"), true);
         addCheck(QStringLiteral("weekNumbers"), QStringLiteral("Show week numbers"), false);
     } else if (id.endsWith(QStringLiteral("currency"))) {
@@ -167,7 +271,9 @@ GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, con
         auto *feed = new QComboBox(feedRow); feed->setEditable(true);
         const QString selectedFeed = settings.value(QStringLiteral("feed")).toString(QStringLiteral("https://github.com/memegeko/aero7-repo/releases.atom"));
         auto rebuildFeeds = [feed, selectedFeed]() {
-            const QString current = feed->currentData().toString().isEmpty() ? selectedFeed : feed->currentData().toString();
+            const QString entered = feed->currentText().trimmed();
+            const QString current = entered.startsWith(QStringLiteral("http://")) || entered.startsWith(QStringLiteral("https://"))
+                ? entered : (feed->currentData().toString().isEmpty() ? selectedFeed : feed->currentData().toString());
             feed->clear(); int selected = -1;
             for (const FeedEntry &entry : loadFeeds()) { feed->addItem(entry.name, entry.url); if (entry.url == current) selected = feed->count() - 1; }
             if (selected < 0) { feed->addItem(QStringLiteral("Custom Feed"), current); selected = feed->count() - 1; }
@@ -182,7 +288,9 @@ GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, con
         addCheck(QStringLiteral("openLinks"), QStringLiteral("Open links in default browser"), true);
     } else if (id.endsWith(QStringLiteral("picturepuzzle"))) {
         addCombo(QStringLiteral("image"), QStringLiteral("Image:"), {QStringLiteral("aero7-flower"), QStringLiteral("aero7-aurora"), QStringLiteral("aero7-landscape"), QStringLiteral("custom")}, QStringLiteral("aero7-flower"));
-        addCombo(QStringLiteral("difficulty"), QStringLiteral("Difficulty:"), {QStringLiteral("3"), QStringLiteral("4"), QStringLiteral("5")}, QStringLiteral("4"));
+        auto *difficulty = addCombo(QStringLiteral("difficulty"), QStringLiteral("Difficulty:"),
+                                     {QStringLiteral("3"), QStringLiteral("4"), QStringLiteral("5")}, QStringLiteral("4"));
+        difficulty->setCurrentIndex(qBound(3, settings.value(QStringLiteral("difficulty")).toInt(4), 5) - 3);
         auto *imageRow = new QWidget(this); auto *imageLayout = new QHBoxLayout(imageRow); imageLayout->setContentsMargins(0, 0, 0, 0);
         auto *customImage = new QLineEdit(settings.value(QStringLiteral("customImage")).toString(), imageRow);
         auto *browse = new QPushButton(QStringLiteral("Browse..."), imageRow); imageLayout->addWidget(customImage, 1); imageLayout->addWidget(browse);
@@ -193,7 +301,10 @@ GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, con
             if (!selected.isEmpty()) customImage->setText(selected);
         });
         auto *newPuzzle = new QPushButton(QStringLiteral("New puzzle"), this); form->addRow(QString(), newPuzzle);
-        connect(newPuzzle, &QPushButton::clicked, this, &QDialog::accept);
+        connect(newPuzzle, &QPushButton::clicked, this, [this]() {
+            m_newPuzzleRequested = true;
+            accept();
+        });
     } else if (id.endsWith(QStringLiteral("slideshow"))) {
         auto *row = new QWidget(this); auto *rowLayout = new QHBoxLayout(row); rowLayout->setContentsMargins(0, 0, 0, 0);
         auto *folder = new QLineEdit(settings.value(QStringLiteral("folder")).toString(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)), row);
@@ -209,12 +320,31 @@ GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, con
         form->addRow(QStringLiteral("Location:"), locationRow); m_lines.insert(QStringLiteral("location"), location);
         auto *latitude = addDouble(QStringLiteral("latitude"), QStringLiteral("Latitude:"), -90.0, 90.0, 51.965);
         auto *longitude = addDouble(QStringLiteral("longitude"), QStringLiteral("Longitude:"), -180.0, 180.0, 6.288);
-        connect(findLocation, &QPushButton::clicked, this, [this, location, latitude, longitude, findLocation]() {
-            const QString queryText = location->text().trimmed(); if (queryText.isEmpty()) return;
+        auto *lookupStatus = new QLabel(this);
+        lookupStatus->setObjectName(QStringLiteral("locationLookupStatus"));
+        lookupStatus->setTextFormat(Qt::PlainText);
+        lookupStatus->setWordWrap(true);
+        lookupStatus->hide();
+        form->addRow(lookupStatus);
+        const auto locationChanged = [this]() { ++m_locationRevision; };
+        connect(location, &QLineEdit::textChanged, this, locationChanged);
+        connect(latitude, &QDoubleSpinBox::valueChanged, this, locationChanged);
+        connect(longitude, &QDoubleSpinBox::valueChanged, this, locationChanged);
+        connect(findLocation, &QPushButton::clicked, this, [this, location, latitude, longitude, findLocation, lookupStatus]() {
+            const QString queryText = location->text().trimmed();
+            if (queryText.isEmpty()) {
+                showLookupStatus(lookupStatus, QStringLiteral("Enter a city or place name to search."));
+                return;
+            }
+            const quint64 revision = m_locationRevision;
+            lookupStatus->clear();
+            lookupStatus->hide();
+            lookupStatus->setMinimumHeight(0);
             QUrl url(QStringLiteral("https://geocoding-api.open-meteo.com/v1/search")); QUrlQuery query;
             query.addQueryItem(QStringLiteral("name"), queryText); query.addQueryItem(QStringLiteral("count"), QStringLiteral("1"));
             query.addQueryItem(QStringLiteral("language"), QStringLiteral("en")); url.setQuery(query);
-            auto *network = new QNetworkAccessManager(this);
+            const bool ownsNetwork = !m_lookupNetwork;
+            auto *network = m_lookupNetwork ? m_lookupNetwork : new QNetworkAccessManager(this);
             network->setTransferTimeout(15000);
             network->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
             findLocation->setEnabled(false); findLocation->setText(QStringLiteral("Finding..."));
@@ -223,13 +353,50 @@ GadgetOptionsDialog::GadgetOptionsDialog(const GadgetDefinition &definition, con
                 constexpr qint64 maximumBytes = 1024 * 1024;
                 if (received > maximumBytes || total > maximumBytes) reply->abort();
             });
-            connect(reply, &QNetworkReply::finished, this, [reply, network, latitude, longitude, location, findLocation]() {
-                const QJsonArray results = QJsonDocument::fromJson(reply->read(1024 * 1024)).object().value(QStringLiteral("results")).toArray();
-                reply->deleteLater(); network->deleteLater(); findLocation->setEnabled(true); findLocation->setText(QStringLiteral("Find"));
-                if (results.isEmpty()) return;
-                const QJsonObject result = results.first().toObject(); latitude->setValue(result.value(QStringLiteral("latitude")).toDouble()); longitude->setValue(result.value(QStringLiteral("longitude")).toDouble());
-                const QString country = result.value(QStringLiteral("country")).toString();
-                location->setText(result.value(QStringLiteral("name")).toString() + (country.isEmpty() ? QString() : QStringLiteral(", ") + country));
+            connect(reply, &QNetworkReply::finished, this, [this, reply, network, ownsNetwork, latitude, longitude, location, findLocation, lookupStatus, revision]() {
+                constexpr qint64 maximumBytes = 1024 * 1024;
+                const bool failed = reply->error() != QNetworkReply::NoError;
+                const bool oversized = reply->bytesAvailable() > maximumBytes;
+                const QByteArray payload = reply->read(maximumBytes);
+                reply->deleteLater(); if (ownsNetwork) network->deleteLater(); findLocation->setEnabled(true); findLocation->setText(QStringLiteral("Find"));
+                const auto showError = [lookupStatus](const QString &message) {
+                    showLookupStatus(lookupStatus, message);
+                };
+                // Revision identity also rejects edits changed away and back.
+                if (revision != m_locationRevision) {
+                    showError(QStringLiteral("Location changed during the search. Click Find to search again."));
+                    return;
+                }
+                if (failed) {
+                    showError(QStringLiteral("Could not look up the location. Check your connection and try again, or enter coordinates manually."));
+                    return;
+                }
+                QJsonParseError error;
+                const auto document = QJsonDocument::fromJson(payload, &error);
+                const auto resultsValue = document.object().value(QStringLiteral("results"));
+                const auto results = resultsValue.toArray();
+                if (oversized || error.error != QJsonParseError::NoError || !document.isObject() ||
+                    (!resultsValue.isUndefined() && !resultsValue.isArray()) || document.object().value(QStringLiteral("error")).toBool()) {
+                    showError(QStringLiteral("The location service returned an invalid response. Your settings were not changed."));
+                    return;
+                }
+                if (results.isEmpty()) {
+                    showError(QStringLiteral("No matching location was found. Try another name or enter coordinates manually."));
+                    return;
+                }
+                const auto result = results.first().toObject();
+                const auto lat = result.value(QStringLiteral("latitude"));
+                const auto lon = result.value(QStringLiteral("longitude"));
+                const QString name = result.value(QStringLiteral("name")).toString().trimmed();
+                if (name.isEmpty() || !lat.isDouble() || !lon.isDouble() ||
+                    !std::isfinite(lat.toDouble()) || !std::isfinite(lon.toDouble()) ||
+                    lat.toDouble() < -90 || lat.toDouble() > 90 || lon.toDouble() < -180 || lon.toDouble() > 180) {
+                    showError(QStringLiteral("The location service returned an invalid location. Your settings were not changed."));
+                    return;
+                }
+                latitude->setValue(lat.toDouble()); longitude->setValue(lon.toDouble());
+                const QString country = result.value(QStringLiteral("country")).toString().trimmed();
+                location->setText(name + (country.isEmpty() ? QString() : QStringLiteral(", ") + country));
             });
         });
         addCombo(QStringLiteral("unit"), QStringLiteral("Temperature:"), {QStringLiteral("celsius"), QStringLiteral("fahrenheit")}, QStringLiteral("celsius"));

@@ -2,8 +2,9 @@
 Type=Application
 Name=Desktop Gadgets
 Comment=Add Aero7 gadgets to the desktop
-Exec=aero7-gadget-host --gallery
+Exec=/usr/bin/aero7-gadget-host --gallery
 Icon=aero7-gadget-gallery
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management
 Categories=Settings;DesktopSettings;
 StartupNotify=true
 X-KDE-StartupNotify=true

@@ -17,7 +17,9 @@ The runtime provides:
 
 Nine built-ins ship in the shared host: Calendar, Clock, CPU Meter, Currency,
 Feed Headlines, Picture Puzzle, Slide Show, Weather and Media Center. A clean
-profile starts with Clock and Weather at the upper-right of the primary screen.
+profile starts with no gadgets. Open Desktop Gadgets to add the ones you want;
+saved instances return at the next login, and removing every gadget leaves an
+empty layout rather than adding Clock and Weather again.
 
 Configuration is stored below `~/.config/aero7/gadgets/`; cached feeds,
 exchange rates and weather are stored below `~/.cache/aero7/gadgets/`.

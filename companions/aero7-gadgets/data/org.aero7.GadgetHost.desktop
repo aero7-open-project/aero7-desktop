@@ -2,8 +2,9 @@
 Type=Application
 Name=Desktop Gadgets
 Comment=Aero7 native desktop gadget runtime
-Exec=aero7-gadget-host --gallery
+Exec=/usr/bin/aero7-gadget-host --gallery
 Icon=aero7-gadget-gallery
 Categories=Settings;DesktopSettings;
 NoDisplay=true
 StartupNotify=false
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management

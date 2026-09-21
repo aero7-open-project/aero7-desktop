@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Aero7 Notification Area
-Comment=Network, audio, power, clock, and application status icons
-Exec=/usr/bin/aero7-tray
-Icon=preferences-system-notifications
-Terminal=false
-NoDisplay=true
-X-KDE-Wayland-VirtualKeyboard=true

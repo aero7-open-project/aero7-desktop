@@ -16,9 +16,11 @@
 #include <QGuiApplication>
 #include <QInputDialog>
 #include <QLinearGradient>
+#include <QLabel>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QProxyStyle>
 #include <QRandomGenerator>
 #include <QScreen>
 #include <QStandardPaths>
@@ -27,6 +29,25 @@
 
 namespace {
 constexpr int controlsWidth = 29;
+
+class GadgetMenuStyle final : public QProxyStyle
+{
+public:
+    void drawPrimitive(PrimitiveElement element, const QStyleOption *option,
+                       QPainter *painter, const QWidget *widget = nullptr) const override
+    {
+        if (element == PE_IndicatorMenuCheckMark) {
+            // Styled menu items ask for this primitive directly. Kvantum
+            // intentionally leaves it empty and draws checks only inside its
+            // complete menu-item renderer, which the stylesheet bypasses.
+            // Use Qt's existing checkmark, preserving every other theme metric
+            // and primitive. This adds no icon asset or global style override.
+            QCommonStyle::drawPrimitive(element, option, painter, widget);
+            return;
+        }
+        QProxyStyle::drawPrimitive(element, option, painter, widget);
+    }
+};
 
 QString menuStyle()
 {
@@ -39,11 +60,13 @@ QString menuStyle()
 }
 }
 
-GadgetWindow::GadgetWindow(const GadgetDefinition &definition, GadgetState state, GadgetManager *manager)
+GadgetWindow::GadgetWindow(const GadgetDefinition &definition, GadgetState state, GadgetManager *manager,
+                         RuntimeServices *services)
     : QWidget(nullptr)
     , m_definition(definition)
     , m_state(std::move(state))
     , m_manager(manager)
+    , m_services(services ? services : RuntimeServices::instance())
 {
     setObjectName(QStringLiteral("Aero7GadgetWindow"));
     setWindowTitle(QStringLiteral("Aero7 Gadget: ") + m_definition.name + QLatin1Char(' ') + m_state.instance);
@@ -75,6 +98,9 @@ GadgetWindow::GadgetWindow(const GadgetDefinition &definition, GadgetState state
         if (m_layerShell) {
             m_layerShell->setLayer(showing || m_state.alwaysOnTop ? LayerShellQt::Window::LayerTop
                                                                   : LayerShellQt::Window::LayerBottom);
+            // Layer requests are double-buffered. Commit through Qt's normal
+            // repaint path now, rather than waiting for e.g. Calendar's timer.
+            update();
         } else if (m_state.alwaysOnTop) {
             raise();
         } else {
@@ -90,7 +116,7 @@ GadgetWindow::GadgetWindow(const GadgetDefinition &definition, GadgetState state
     connect(&m_slideAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) { m_data.slideTransition = value.toReal(); update(); });
 
     updateWindowSize();
-    setWindowOpacity(qBound(20, m_state.opacity, 100) / 100.0);
+    m_state.opacity = qBound(20, m_state.opacity, 100);
     initializeRuntime();
 }
 
@@ -164,6 +190,8 @@ void GadgetWindow::setDesktopPosition(const QPoint &globalPosition)
     const QRect screenGeometry = m_desktopScreen ? m_desktopScreen->geometry() : QRect(QPoint(), QSize(1024, 768));
     m_layerShell->setMargins(QMargins(globalPosition.x() - screenGeometry.x(),
                                      globalPosition.y() - screenGeometry.y(), 0, 0));
+    // Layer-shell state takes effect with the next surface commit.
+    update();
 }
 
 void GadgetWindow::notifyGeometryChanged()
@@ -191,6 +219,7 @@ void GadgetWindow::applyWindowLayer()
     if (m_layerShell) {
         m_layerShell->setLayer(KWindowSystem::showingDesktop() || m_state.alwaysOnTop
                                    ? LayerShellQt::Window::LayerTop : LayerShellQt::Window::LayerBottom);
+        update();
         return;
     }
     if (QGuiApplication::platformName().startsWith(QStringLiteral("wayland"))) return;
@@ -202,7 +231,7 @@ void GadgetWindow::applyWindowLayer()
 
 void GadgetWindow::initializeRuntime()
 {
-    RuntimeServices *services = RuntimeServices::instance();
+    RuntimeServices *services = m_services;
     if (m_definition.id.endsWith(QStringLiteral("cpu"))) {
         connect(services, &RuntimeServices::systemUpdated, this,
                 [this](double cpu, double memory, quint64 used, quint64 total) {
@@ -213,30 +242,27 @@ void GadgetWindow::initializeRuntime()
     if (m_definition.id.endsWith(QStringLiteral("currency"))) {
         connect(services, &RuntimeServices::currencyUpdated, this,
                 [this](const QString &base, const QString &target, double rate, const QString &updated, bool stale, const QString &error) {
-                    if (base != m_state.settings.value(QStringLiteral("base")).toString(QStringLiteral("EUR"))
-                        || target != m_state.settings.value(QStringLiteral("target")).toString(QStringLiteral("USD"))) return;
+                    if (base + QLatin1Char('-') + target != networkDataKey()) return;
                     m_data.currencyRate = rate; m_data.currencyUpdated = updated; m_data.currencyStale = stale; m_data.error = error; update();
                 });
-        m_networkTimer.start(6 * 60 * 60 * 1000);
     }
     if (m_definition.id.endsWith(QStringLiteral("weather"))) {
         connect(services, &RuntimeServices::weatherUpdated, this,
-                [this](const QString &location, double temperature, int code, const QString &updated, bool stale, const QString &error,
-                       const QStringList &days, const QVector<double> &temperatures, const QVector<int> &codes) {
-                    if (location != m_state.settings.value(QStringLiteral("location")).toString(QStringLiteral("Doetinchem"))) return;
+                [this](const QString &, double temperature, int code, const QString &updated, bool stale, const QString &error,
+                       const QStringList &days, const QVector<double> &temperatures, const QVector<int> &codes, const QString &key) {
+                    if (key != networkDataKey()) return;
                     m_data.temperature = temperature; m_data.weatherCode = code;
                     m_data.weatherUpdated = updated; m_data.weatherStale = stale; m_data.error = error;
                     m_data.forecastDays = days; m_data.forecastTemperatures = temperatures; m_data.forecastCodes = codes; update();
                 });
-        m_networkTimer.start(qMax(15, m_state.settings.value(QStringLiteral("refreshMinutes")).toInt(30)) * 60 * 1000);
     }
     if (m_definition.id.endsWith(QStringLiteral("feeds"))) {
         connect(services, &RuntimeServices::feedUpdated, this,
-                [this](const QString &url, const QStringList &titles, const QStringList &links, const QString &error) {
-                    if (url != QUrl::fromUserInput(m_state.settings.value(QStringLiteral("feed")).toString()).toString()) return;
-                    m_data.feedTitles = titles; m_data.feedLinks = links; m_data.error = error; update();
+                [this](const QString &url, const QStringList &titles, const QStringList &links, const QString &error, bool stale) {
+                    if (url != networkDataKey()) return;
+                    m_data.feedTitles = titles; m_data.feedLinks = links; m_data.error = error;
+                    m_data.feedLoaded = true; m_data.feedStale = stale; update();
                 });
-        m_networkTimer.start(qMax(5, m_state.settings.value(QStringLiteral("refreshMinutes")).toInt(30)) * 60 * 1000);
     }
     if (m_definition.id.endsWith(QStringLiteral("mediacenter"))) {
         connect(services, &RuntimeServices::mediaUpdated, this,
@@ -247,14 +273,51 @@ void GadgetWindow::initializeRuntime()
         connect(services, &RuntimeServices::mediaArtUpdated, this,
                 [this](const QString &, const QImage &image) { m_data.mediaArt = image; update(); });
     }
+    updateNetworkTimer();
     if (m_definition.id.endsWith(QStringLiteral("picturepuzzle"))) initializePuzzle();
     if (m_definition.id.endsWith(QStringLiteral("slideshow"))) loadSlides();
     QTimer::singleShot(0, this, [this]() { updateNetworkData(false); });
 }
 
+QString GadgetWindow::networkDataKey() const
+{
+    if (m_definition.id.endsWith(QStringLiteral("weather")))
+        return RuntimeServices::weatherRequestKey(m_state.settings.value(QStringLiteral("latitude")).toDouble(51.965),
+                                                  m_state.settings.value(QStringLiteral("longitude")).toDouble(6.288),
+                                                  m_state.settings.value(QStringLiteral("unit")).toString() == QStringLiteral("fahrenheit"));
+    if (m_definition.id.endsWith(QStringLiteral("currency")))
+        return m_state.settings.value(QStringLiteral("base")).toString(QStringLiteral("EUR")).trimmed().toUpper()
+            + QLatin1Char('-') + m_state.settings.value(QStringLiteral("target")).toString(QStringLiteral("USD")).trimmed().toUpper();
+    if (m_definition.id.endsWith(QStringLiteral("feeds")))
+        return QUrl::fromUserInput(m_state.settings.value(QStringLiteral("feed")).toString(QStringLiteral("https://github.com/memegeko/aero7-repo/releases.atom"))).toString();
+    return {};
+}
+
 void GadgetWindow::updateNetworkData(bool force)
 {
-    RuntimeServices *services = RuntimeServices::instance();
+    RuntimeServices *services = m_services;
+    const QString key = networkDataKey();
+    if (key != m_networkDataKey) {
+        m_networkDataKey = key;
+        // A previous query's reading cannot be relabelled with new units,
+        // coordinates, currencies or a different feed while fetching.
+        m_data.temperature = 0;
+        m_data.weatherCode = -1;
+        m_data.weatherUpdated.clear();
+        m_data.weatherStale = false;
+        m_data.forecastDays.clear();
+        m_data.forecastTemperatures.clear();
+        m_data.forecastCodes.clear();
+        m_data.currencyRate = 0;
+        m_data.currencyUpdated.clear();
+        m_data.currencyStale = false;
+        m_data.feedTitles.clear();
+        m_data.feedLinks.clear();
+        m_data.feedLoaded = false;
+        m_data.feedStale = false;
+        m_data.error.clear();
+        update();
+    }
     if (m_definition.id.endsWith(QStringLiteral("currency"))) {
         services->requestCurrency(m_state.settings.value(QStringLiteral("base")).toString(QStringLiteral("EUR")),
                                   m_state.settings.value(QStringLiteral("target")).toString(QStringLiteral("USD")), force);
@@ -271,11 +334,36 @@ void GadgetWindow::updateNetworkData(bool force)
 void GadgetWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    // Replace old alpha as well as color when opacity changes or a drag starts.
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.fillRect(rect(), Qt::transparent);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    if (m_dragPreview) return;
     m_data.slideshowControlsVisible = m_definition.id.endsWith(QStringLiteral("slideshow")) && m_controlsOpacity > .05;
     m_data.slideshowPaused = m_slidePaused;
-    GadgetPainter::paint(painter, m_definition, m_state, m_data, bodyRect());
-    paintControls(painter);
+    const auto paintContents = [this](QPainter &target) {
+        target.setRenderHint(QPainter::Antialiasing, true);
+        GadgetPainter::paint(target, m_definition, m_state, m_data, bodyRect());
+        paintControls(target);
+    };
+    if (m_state.opacity == 100) {
+        paintContents(painter);
+        return;
+    }
+    // Wayland does not implement QWidget::setWindowOpacity. Compose the body,
+    // text, animated transitions and hover controls first, then apply opacity
+    // once to their final surface. Applying it to each primitive would make
+    // overlapping elements accumulate alpha and bypass local painter opacity.
+    const qreal dpr = devicePixelRatioF();
+    QImage contents(size() * dpr, QImage::Format_ARGB32_Premultiplied);
+    contents.setDevicePixelRatio(dpr);
+    contents.fill(Qt::transparent);
+    {
+        QPainter contentPainter(&contents);
+        paintContents(contentPainter);
+    }
+    painter.setOpacity(m_state.opacity / 100.0);
+    painter.drawImage(QPoint(0, 0), contents);
 }
 
 QRect GadgetWindow::controlRect(Control control) const
@@ -374,38 +462,99 @@ void GadgetWindow::mousePressEvent(QMouseEvent *event)
             return;
         }
         if (m_definition.id.endsWith(QStringLiteral("mediacenter"))
-            && event->position().y() >= bodyRect().height() * .72) {
-            handleMediaClick(event->position().toPoint());
+            && handleMediaClick(event->position().toPoint())) {
             return;
         }
         m_dragging = true;
         m_dragOffset = m_layerShell
             ? event->position().toPoint()
             : event->globalPosition().toPoint() - pos();
-        m_dragStartPosition = m_layerShell ? m_desktopPosition : pos();
+        if (m_layerShell) beginLayerDrag();
     } else if (m_pressedControl == Control::Drag) {
         m_dragging = true;
         m_dragOffset = m_layerShell
             ? event->position().toPoint()
             : event->globalPosition().toPoint() - pos();
-        m_dragStartPosition = m_layerShell ? m_desktopPosition : pos();
+        if (m_layerShell) beginLayerDrag();
     }
+}
+
+void GadgetWindow::beginLayerDrag()
+{
+    // Keep the input surface stationary throughout the implicit pointer grab.
+    // Wayland events can precede acknowledgement of changed layer margins;
+    // neither the requested nor the press-time position tracks a moving input
+    // surface reliably. An input-transparent preview avoids that feedback.
+    const QPixmap contents = grab();
+    auto *preview = new QLabel;
+    preview->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint
+                           | Qt::NoDropShadowWindowHint | Qt::WindowTransparentForInput
+                           | Qt::WindowDoesNotAcceptFocus);
+    preview->setAttribute(Qt::WA_TranslucentBackground);
+    preview->setAttribute(Qt::WA_ShowWithoutActivating);
+    preview->setFocusPolicy(Qt::NoFocus);
+    preview->setFixedSize(size());
+    preview->setPixmap(contents);
+    // grab() already contains the composed opacity. Keep the preview's window
+    // opacity at 1 so its alpha is neither ignored on Wayland nor applied twice.
+    m_dragPreview.reset(preview);
+    if (QGuiApplication::platformName().startsWith(QStringLiteral("wayland"))) {
+        preview->winId();
+        m_dragPreviewLayer = LayerShellQt::Window::get(preview->windowHandle());
+        m_dragPreviewLayer->setScope(QStringLiteral("aero7-gadget-drag-preview"));
+        m_dragPreviewLayer->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop)
+                                      | LayerShellQt::Window::AnchorLeft);
+        m_dragPreviewLayer->setExclusiveZone(0);
+        m_dragPreviewLayer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
+        m_dragPreviewLayer->setActivateOnShow(false);
+        m_dragPreviewLayer->setScreen(m_desktopScreen);
+        m_dragPreviewLayer->setLayer(m_layerShell->layer());
+        m_dragPreviewLayer->setDesiredSize(size());
+    }
+    m_dragTarget = m_desktopPosition;
+    moveDragPreview(m_dragTarget);
+    preview->show();
+    update();
+}
+
+void GadgetWindow::moveDragPreview(const QPoint &position)
+{
+    if (m_dragPreviewLayer) {
+        const QPoint origin = m_desktopScreen ? m_desktopScreen->geometry().topLeft() : QPoint();
+        m_dragPreviewLayer->setMargins(QMargins(position.x() - origin.x(), position.y() - origin.y(), 0, 0));
+    } else {
+        m_dragPreview->move(position);
+    }
+    m_dragPreview->update();
 }
 
 void GadgetWindow::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_dragging && (event->buttons() & Qt::LeftButton)) {
         const QPoint requested = m_layerShell
-            ? m_dragStartPosition + event->position().toPoint() - m_dragOffset
+            ? m_desktopPosition + event->position().toPoint() - m_dragOffset
             : event->globalPosition().toPoint() - m_dragOffset;
-        setDesktopPosition(m_manager->snappedPosition(this, requested));
-        emit stateChanged();
+        if (m_dragPreview) {
+            m_dragTarget = m_manager->snappedPosition(this, requested);
+            moveDragPreview(m_dragTarget);
+        } else {
+            setDesktopPosition(m_manager->snappedPosition(this, requested));
+            emit stateChanged();
+        }
     }
 }
 
 void GadgetWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton) return;
+    if (m_dragPreview) {
+        // Include the release coordinate even when motion events were coalesced.
+        m_dragTarget = m_manager->snappedPosition(this,
+            m_desktopPosition + event->position().toPoint() - m_dragOffset);
+        m_dragPreview.reset();
+        m_dragPreviewLayer = nullptr;
+        setDesktopPosition(m_dragTarget);
+    }
     const Control released = controlAt(event->position().toPoint());
     if (m_pressedControl != Control::None && released == m_pressedControl) {
         if (released == Control::Close) emit closeRequested();
@@ -431,12 +580,18 @@ void GadgetWindow::contextMenuEvent(QContextMenuEvent *event)
 
 void GadgetWindow::showContextMenu(const QPoint &globalPosition)
 {
+    // Outlive the root and every submenu: a focused submenu can still use its
+    // style while clearing focus during destruction. Parenting the style to
+    // the root deletes it before the later-created submenu children.
+    GadgetMenuStyle checkStyle;
     QMenu menu;
+    menu.setStyle(&checkStyle);
     menu.setStyleSheet(menuStyle());
     QAction *moveAction = menu.addAction(QStringLiteral("Move"));
     connect(moveAction, &QAction::triggered, this, [this]() { if (windowHandle()) windowHandle()->startSystemMove(); });
     if (m_definition.supportsLarge) {
         QMenu *sizeMenu = menu.addMenu(QStringLiteral("Size"));
+        sizeMenu->setStyle(&checkStyle);
         QAction *small = sizeMenu->addAction(QStringLiteral("Small")); small->setCheckable(true); small->setChecked(m_state.size == QStringLiteral("small"));
         QAction *large = sizeMenu->addAction(QStringLiteral("Large")); large->setCheckable(true); large->setChecked(m_state.size == QStringLiteral("large"));
         connect(small, &QAction::triggered, this, [this]() { setSizeMode(QStringLiteral("small")); });
@@ -445,6 +600,7 @@ void GadgetWindow::showContextMenu(const QPoint &globalPosition)
     QAction *above = menu.addAction(QStringLiteral("Always on top")); above->setCheckable(true); above->setChecked(m_state.alwaysOnTop);
     connect(above, &QAction::toggled, this, &GadgetWindow::setAlwaysOnTop);
     QMenu *opacity = menu.addMenu(QStringLiteral("Opacity"));
+    opacity->setStyle(&checkStyle);
     for (int percent : {100, 80, 60, 40, 20}) {
         QAction *action = opacity->addAction(QString::number(percent) + QLatin1Char('%'));
         action->setCheckable(true); action->setChecked(m_state.opacity == percent);
@@ -481,7 +637,7 @@ void GadgetWindow::setSizeMode(const QString &mode)
 void GadgetWindow::setOpacityPercent(int percent)
 {
     m_state.opacity = qBound(20, percent, 100);
-    setWindowOpacity(m_state.opacity / 100.0);
+    update();
     emit stateChanged();
 }
 
@@ -496,15 +652,59 @@ void GadgetWindow::showOptions()
 {
     GadgetOptionsDialog dialog(m_definition, m_state.settings, this);
     if (dialog.exec() != QDialog::Accepted) return;
+    const auto previous = m_state.settings;
     m_state.settings = dialog.settings();
     if (m_definition.id.endsWith(QStringLiteral("clock"))) {
         m_repaintTimer.setInterval(m_state.settings.value(QStringLiteral("seconds")).toBool(true) ? 1000 : 60000);
     }
-    if (m_definition.id.endsWith(QStringLiteral("picturepuzzle"))) initializePuzzle();
-    if (m_definition.id.endsWith(QStringLiteral("slideshow"))) loadSlides();
+    if (m_definition.id.endsWith(QStringLiteral("picturepuzzle"))) {
+        // Adding default fields on the first Options visit is not a new game.
+        const bool changed =
+            qBound(3, previous.value(QStringLiteral("difficulty")).toInt(4), 5) !=
+                m_state.settings.value(QStringLiteral("difficulty")).toInt(4) ||
+            previous.value(QStringLiteral("image")).toString(QStringLiteral("aero7-flower")) !=
+                m_state.settings.value(QStringLiteral("image")).toString() ||
+            (m_state.settings.value(QStringLiteral("image")).toString() == QStringLiteral("custom") &&
+             previous.value(QStringLiteral("customImage")).toString() !=
+                m_state.settings.value(QStringLiteral("customImage")).toString());
+        if (dialog.newPuzzleRequested() || changed) initializePuzzle();
+    }
+    if (m_definition.id.endsWith(QStringLiteral("slideshow"))) {
+        const auto folder = [](const QJsonObject &settings) {
+            QString path = settings.value(QStringLiteral("folder")).toString();
+            if (path.isEmpty()) path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+            return QDir::cleanPath(QDir(path).absolutePath());
+        };
+        if (folder(previous) != folder(m_state.settings)) {
+            loadSlides();
+        } else {
+            // Accepting Options is not a request to restart the slideshow.
+            // Keep its current picture, pause state and (when unchanged)
+            // countdown. Updating an inactive timer must not resume playback.
+            const int delay = qBound(2, m_state.settings.value(QStringLiteral("delaySeconds")).toInt(10), 3600) * 1000;
+            if (m_slideTimer.interval() != delay) m_slideTimer.setInterval(delay);
+            if (m_state.settings.value(QStringLiteral("transition")).toString(QStringLiteral("fade")) == QStringLiteral("none")) {
+                m_slideAnimation.stop();
+                m_data.previousSlideImage = {};
+                m_data.slideTransition = 1.0;
+            }
+        }
+    }
+    updateNetworkTimer();
     updateNetworkData(true);
     emit stateChanged();
     update();
+}
+
+void GadgetWindow::updateNetworkTimer()
+{
+    int minutes = 0;
+    if (m_definition.id.endsWith(QStringLiteral("currency"))) minutes = 360;
+    else if (m_definition.id.endsWith(QStringLiteral("weather")))
+        minutes = qBound(15, m_state.settings.value(QStringLiteral("refreshMinutes")).toInt(30), 360);
+    else if (m_definition.id.endsWith(QStringLiteral("feeds")))
+        minutes = qBound(5, m_state.settings.value(QStringLiteral("refreshMinutes")).toInt(30), 1440);
+    if (minutes) m_networkTimer.start(minutes * 60 * 1000);
 }
 
 void GadgetWindow::initializePuzzle()
@@ -576,6 +776,11 @@ void GadgetWindow::movePuzzleTile(const QPoint &position)
 
 void GadgetWindow::loadSlides()
 {
+    m_slideTimer.stop();
+    m_slideAnimation.stop();
+    m_data.previousSlideImage = {};
+    m_data.slideImage = {};
+    m_data.slideTransition = 1.0;
     QString folder = m_state.settings.value(QStringLiteral("folder")).toString();
     if (folder.isEmpty()) folder = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     QDir directory(folder);
@@ -584,7 +789,8 @@ void GadgetWindow::loadSlides()
     for (const QFileInfo &file : directory.entryInfoList(filters, QDir::Files | QDir::Readable, QDir::Name)) m_slideFiles << file.absoluteFilePath();
     m_slideIndex = 0;
     m_slidePaused = false;
-    if (m_slideFiles.isEmpty()) {
+    const bool loaded = showSlideAt(0);
+    if (!loaded) {
         m_data.slideImage = QImage(320, 220, QImage::Format_ARGB32_Premultiplied);
         QPainter painter(&m_data.slideImage);
         QLinearGradient background(0, 0, m_data.slideImage.width(), m_data.slideImage.height());
@@ -593,10 +799,8 @@ void GadgetWindow::loadSlides()
         const QPointF center(175, 118); painter.setPen(Qt::NoPen);
         for (int i = 0; i < 18; ++i) { painter.save(); painter.translate(center); painter.rotate(i * 20.0); QLinearGradient petal(0, -96, 0, -20); petal.setColorAt(0, QColor(255, 226, 40)); petal.setColorAt(1, QColor(232, 91, 15)); painter.setBrush(petal); painter.drawEllipse(QRectF(-14, -103, 28, 88)); painter.restore(); }
         painter.setBrush(QColor(88, 52, 17)); painter.drawEllipse(center, 28, 28);
-    } else {
-        m_data.slideImage = QImage(m_slideFiles.first());
     }
-    m_slideTimer.start(qMax(2, m_state.settings.value(QStringLiteral("delaySeconds")).toInt(10)) * 1000);
+    if (loaded) m_slideTimer.start(qBound(2, m_state.settings.value(QStringLiteral("delaySeconds")).toInt(10), 3600) * 1000);
     update();
 }
 
@@ -611,21 +815,32 @@ void GadgetWindow::nextSlide()
 void GadgetWindow::previousSlide()
 {
     if (m_slideFiles.isEmpty()) return;
-    showSlideAt((m_slideIndex - 1 + m_slideFiles.size()) % m_slideFiles.size());
+    showSlideAt((m_slideIndex - 1 + m_slideFiles.size()) % m_slideFiles.size(), -1);
 }
 
-void GadgetWindow::showSlideAt(int index)
+bool GadgetWindow::showSlideAt(int index, int direction)
 {
-    if (index < 0 || index >= m_slideFiles.size()) return;
-    const QImage next(m_slideFiles.at(index)); if (next.isNull()) return;
+    if (index < 0 || index >= m_slideFiles.size()) return false;
+    QImage next;
+    // Re-read at selection time: a picture can disappear or become unreadable
+    // after the folder scan. Try at most one full cycle in the requested
+    // direction so one bad file cannot trap next/previous on the same index.
+    for (qsizetype attempt = 0; attempt < m_slideFiles.size(); ++attempt) {
+        next = QImage(m_slideFiles.at(index));
+        if (!next.isNull()) break;
+        index = (index + (direction < 0 ? -1 : 1) + m_slideFiles.size()) % m_slideFiles.size();
+    }
+    if (next.isNull()) return false;
     m_slideIndex = index;
     m_data.previousSlideImage = m_data.slideImage;
     m_data.slideImage = next;
-    if (m_state.settings.value(QStringLiteral("transition")).toString(QStringLiteral("fade")) == QStringLiteral("fade")) {
+    if (!m_data.previousSlideImage.isNull()
+        && m_state.settings.value(QStringLiteral("transition")).toString(QStringLiteral("fade")) == QStringLiteral("fade")) {
         m_data.slideTransition = 0.0; m_slideAnimation.stop(); m_slideAnimation.start();
     } else {
         m_data.slideTransition = 1.0; m_data.previousSlideImage = {}; update();
     }
+    return true;
 }
 
 void GadgetWindow::handleCalendarClick(const QPoint &position)
@@ -677,7 +892,7 @@ bool GadgetWindow::handleSlideClick(const QPoint &position)
     else if (position.x() < third * 2) {
         m_slidePaused = !m_slidePaused;
         if (m_slidePaused) m_slideTimer.stop();
-        else m_slideTimer.start(qMax(2, m_state.settings.value(QStringLiteral("delaySeconds")).toInt(10)) * 1000);
+        else m_slideTimer.start(qBound(2, m_state.settings.value(QStringLiteral("delaySeconds")).toInt(10), 3600) * 1000);
         update();
     } else nextSlide();
     return true;
@@ -688,18 +903,25 @@ void GadgetWindow::openFeedItem(const QPoint &position)
     if (m_data.feedLinks.isEmpty()) return;
     const int header = m_state.size == QStringLiteral("large") ? 40 : 33;
     const int lineHeight = m_state.size == QStringLiteral("large") ? 31 : 23;
+    if (!bodyRect().contains(position) || position.y() < header) return;
     const int index = (position.y() - header) / lineHeight;
-    if (index >= 0 && index < m_data.feedLinks.size() && m_state.settings.value(QStringLiteral("openLinks")).toBool(true)) {
+    const int visibleRows = qMax(1, (bodyRect().height() - header - 17) / lineHeight);
+    if (index < visibleRows && index < m_data.feedTitles.size() && index < m_data.feedLinks.size()
+        && m_state.settings.value(QStringLiteral("openLinks")).toBool(true)) {
         const QUrl url = QUrl::fromUserInput(m_data.feedLinks.at(index));
         if (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https")) QDesktopServices::openUrl(url);
     }
 }
 
-void GadgetWindow::handleMediaClick(const QPoint &position)
+bool GadgetWindow::handleMediaClick(const QPoint &position)
 {
-    if (position.y() < bodyRect().height() * .72) return;
-    const int third = bodyRect().width() / 3;
-    if (position.x() < third) RuntimeServices::instance()->mediaCommand(QStringLiteral("Previous"));
-    else if (position.x() < third * 2) RuntimeServices::instance()->mediaCommand(QStringLiteral("PlayPause"));
-    else RuntimeServices::instance()->mediaCommand(QStringLiteral("Next"));
+    const auto controls = GadgetPainter::mediaControlRects(bodyRect());
+    const QString commands[] = {QStringLiteral("Previous"), QStringLiteral("PlayPause"), QStringLiteral("Next")};
+    for (size_t index = 0; index < controls.size(); ++index) {
+        if (controls[index].contains(position)) {
+            RuntimeServices::instance()->mediaCommand(commands[index]);
+            return true;
+        }
+    }
+    return false;
 }

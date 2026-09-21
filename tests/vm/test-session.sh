@@ -2,6 +2,11 @@
 set -euo pipefail
 
 failures=0
+expect_test_tools="${1:-}"
+if [[ $# -gt 1 || ( -n "$expect_test_tools" && "$expect_test_tools" != --expect-test-tools ) ]]; then
+    printf 'Usage: %s [--expect-test-tools]\n' "$0" >&2
+    exit 64
+fi
 check_file() {
     if [[ ! -e "$1" ]]; then
         printf 'MISSING %s\n' "$1" >&2
@@ -35,6 +40,7 @@ check_file /usr/share/wayland-sessions/aero7-safe.desktop
 check_file /usr/lib/systemd/user/aero7-shell.service
 check_file /usr/lib/systemd/user/aero7-session-setup.service
 check_file '/usr/lib/systemd/user/app-x\x2datpootb@autostart.service.d/10-aero7.conf'
+if [[ "$expect_test_tools" == --expect-test-tools ]]; then
 check_file /usr/lib/aero7-desktop/test-live-session.sh
 check_file /usr/lib/aero7-desktop/test-recovery.sh
 check_file /usr/lib/aero7-desktop/test-multimonitor.sh
@@ -50,6 +56,8 @@ check_file /usr/lib/aero7-desktop/test-uninstall.sh
 check_file /usr/lib/aero7-desktop/aero7-test-status-notifier
 check_file /usr/lib/aero7-desktop/aero7-screenshot-test
 check_file /usr/share/applications/org.aero7.visualtest.desktop
+check_file /usr/lib/udev/rules.d/99-aero7-ydotool.rules
+fi
 check_file /etc/xdg/aero7-desktop/aerothemeplasmarc
 check_file /etc/xdg/aero7-desktop/kwinrc
 

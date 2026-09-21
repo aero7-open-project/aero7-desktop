@@ -165,7 +165,7 @@ GadgetGallery::GadgetGallery(GadgetManager *manager, QWidget *parent)
     m_list->setDragEnabled(false);
     m_list->setContextMenuPolicy(Qt::CustomContextMenu);
     m_list->setStyleSheet(QStringLiteral(
-        "QListWidget { background:#fbfbfb; border:1px solid #c9c9c9; outline:0; font:9pt 'Segoe UI'; }"
+        "QListWidget { background:#fbfbfb; color:#111; border:1px solid #c9c9c9; outline:0; font:9pt 'Segoe UI'; }"
         "QListWidget::item { padding:3px; border:1px solid transparent; }"
         "QListWidget::item:hover { background:#eef7ff; border:1px solid #b8d6f2; }"
         "QListWidget::item:selected { background:#dceeff; border:1px solid #7da2ce; color:#111; }"));
@@ -175,10 +175,13 @@ GadgetGallery::GadgetGallery(GadgetManager *manager, QWidget *parent)
     auto *detailsButton = new QToolButton(this); detailsButton->setText(QStringLiteral("⌄  Show details")); detailsButton->setAutoRaise(true); detailsButton->setCheckable(true);
     footer->addWidget(detailsButton); footer->addStretch(1);
     auto *online = new QPushButton(ownedIcon(QStringLiteral(":/aero7/icons/toolbar/online.png")), QStringLiteral("Get more gadgets online"), this);
-    online->setFlat(true); online->setStyleSheet(QStringLiteral("QPushButton { color:#0655bd; text-decoration:underline; border:0; }"));
+    // Return in the gadget list activates its item, not the dialog's website link.
+    online->setAutoDefault(false);
+    online->setDefault(false);
+    online->setFlat(true); online->setStyleSheet(QStringLiteral("QPushButton { color:palette(link); text-decoration:underline; border:0; }"));
     footer->addWidget(online);
     root->addLayout(footer);
-    m_details = new QLabel(this); m_details->setVisible(false); m_details->setStyleSheet(QStringLiteral("color:#4b4b4b; padding:2px 8px;")); root->addWidget(m_details);
+    m_details = new QLabel(this); m_details->setVisible(false); m_details->setStyleSheet(QStringLiteral("color:palette(window-text); padding:2px 8px;")); root->addWidget(m_details);
 
     connect(m_search, &QLineEdit::textChanged, this, [this]() { m_page = 0; rebuild(); });
     connect(m_previous, &QToolButton::clicked, this, [this]() { if (m_page > 0) { --m_page; rebuild(); } });
@@ -233,7 +236,7 @@ void GadgetGallery::showItemMenu(const QPoint &position)
     if (!item) return;
     m_list->setCurrentItem(item);
     QMenu menu(this);
-    menu.setStyleSheet(QStringLiteral("QMenu { background:#f5f5f5; border:1px solid #777; font:9pt 'Segoe UI'; } QMenu::item { padding:5px 32px 5px 24px; } QMenu::item:selected { background:#dceeff; }"));
+    menu.setStyleSheet(QStringLiteral("QMenu { background:#f5f5f5; color:#111; border:1px solid #777; font:9pt 'Segoe UI'; } QMenu::item { padding:5px 32px 5px 24px; } QMenu::item:selected { background:#dceeff; }"));
     QAction *add = menu.addAction(QStringLiteral("Add"));
     connect(add, &QAction::triggered, this, &GadgetGallery::addCurrent);
     menu.exec(m_list->viewport()->mapToGlobal(position));

@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Aero7 Notifications
-Comment=Freedesktop-compatible Aero7 notifications and history
-Exec=/usr/bin/aero7-notify
-Icon=preferences-system-notifications
-Terminal=false
-NoDisplay=true

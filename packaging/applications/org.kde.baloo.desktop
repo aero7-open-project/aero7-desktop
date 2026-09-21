@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=File Search Indexer
+Comment=Extract file metadata for desktop search
+Exec=/usr/lib/kf6/baloo_file_extractor
+TryExec=/usr/lib/kf6/baloo_file_extractor
+NoDisplay=true
+Terminal=false
+StartupNotify=false

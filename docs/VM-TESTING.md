@@ -7,10 +7,23 @@
 - SSH user with sudo access;
 - one normal display; the multi-output test creates three nested outputs.
 
-After package installation and an Aero7 login, run:
+## Test-only payload
+
+Normal desktop builds do not install VM scripts, synthetic tray items, the
+visual-test screenshot identity, or the ydotool rule. Recovery, migration, and
+the desktop session remain installed. `BUILD_TESTING=ON` builds local tests but
+does not by itself install these helpers.
+
+For a disposable test image, configure with `-DAERO7_INSTALL_TEST_TOOLS=ON`.
+The source-tree Arch recipe accepts `AERO7_INSTALL_TEST_TOOLS=ON makepkg ...`;
+`tests/vm/install.sh` opts in explicitly. Do not use that option for normal
+release packages. To check a normal installation from a checkout, run
+`tests/vm/test-session.sh` without the test-tools flag.
+
+After test-enabled package installation and an Aero7 login, run:
 
 ```bash
-/usr/lib/aero7-desktop/test-session.sh
+/usr/lib/aero7-desktop/test-session.sh --expect-test-tools
 /usr/lib/aero7-desktop/test-live-session.sh
 /usr/lib/aero7-desktop/test-control-panel.sh
 /usr/lib/aero7-desktop/test-file-explorer.sh
@@ -23,8 +36,8 @@ After package installation and an Aero7 login, run:
 ```
 
 For automated pointer interaction, the disposable VM uses `ydotool`. Install
-`tests/vm/99-aero7-ydotool.rules` as
-`/etc/udev/rules.d/99-aero7-ydotool.rules`, reload udev, and restart the
+the test-enabled package's `/usr/lib/udev/rules.d/99-aero7-ydotool.rules`,
+reload udev, and restart the
 `ydotool` user service. This marks its combined virtual input device as both a
 keyboard and mouse so KWin accepts button events; it is test infrastructure,
 not an Aero7 runtime dependency.

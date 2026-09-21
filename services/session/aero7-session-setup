@@ -2,12 +2,18 @@
 set -euo pipefail
 
 reconcile_only=0
-if [[ "${1:-}" == "--reconcile-only" ]]; then
-    reconcile_only=1
-elif [[ $# -gt 0 ]]; then
-    printf 'Usage: aero7-session-setup [--reconcile-only]\n' >&2
+layout_only=0
+usage() {
+    printf 'Usage: aero7-session-setup [--reconcile-only|--reconcile-layout-only]\n' >&2
     exit 64
-fi
+}
+(( $# <= 1 )) || usage
+case "${1:-}" in
+    '') ;;
+    --reconcile-only) reconcile_only=1 ;;
+    --reconcile-layout-only) reconcile_only=1; layout_only=1 ;;
+    *) usage ;;
+esac
 
 state_home="${XDG_STATE_HOME:-$HOME/.local/state}/aero7-desktop"
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -115,6 +121,11 @@ ensure_window_management_defaults() {
     qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
 }
 
+# Repair the older image-mode launcher before capture/desktop-file discovery.
+if /usr/lib/aero7-desktop/aero7-screenshot-identity; then
+    kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
+fi
+
 wait_for_aeroshell
 ensure_fresh_desktop_default
 
@@ -131,7 +142,9 @@ qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript \
 apply_wallpaper
 ensure_window_management_defaults
 
-apply_visual_defaults
+if ((!layout_only)); then
+    apply_visual_defaults
+fi
 
 reload_aeroshell_after_appearance_repair() {
     # Plasma keeps parts of a newly applied global theme in memory even after
@@ -152,7 +165,11 @@ reload_aeroshell_after_appearance_repair() {
     apply_wallpaper
 }
 
-if ((reconcile_only)); then
+# Panel/output repair runs through the live scripting interface. Restarting
+# for a layout-only change causes taskbar flicker and sends late splash progress
+# after the startup splash has exited. Appearance recovery still needs a reload
+# to discard Plasma's in-memory global-theme state.
+if ((reconcile_only && !layout_only)); then
     reload_aeroshell_after_appearance_repair
 fi
 

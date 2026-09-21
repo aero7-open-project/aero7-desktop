@@ -49,6 +49,14 @@ The source and package recipes are published independently from the Aero7 ISO.
 An ISO should be treated as available only when it appears on the main Aero7
 release page with matching checksums.
 
+On 21 September 2026, Desktop `0.2.0-33` completed fresh online and disconnected
+offline test-candidate installation, OOBE, password-login and exported-log
+validation. Both installed systems had zero failed user/system units and no
+collected coredumps. Login/lock branding, the SDDM accessibility/session menu,
+factory taskbar, File Explorer pin, Optional Features and Meta+Shift+S capture
+were also exercised. This is release-candidate evidence, not publication of a
+final Beta 2 ISO or physical-hardware certification.
+
 ## About the project
 
 Aero7 Desktop is the user-facing desktop environment for
@@ -139,10 +147,11 @@ GitHub Wiki from the `beta` branch.
 
 ## Project status
 
-The current 0.2 beta line has been validated in an Arch/Plasma virtual machine
-for package installation, clean login, Start and taskbar interaction, Control
-Panel, File Explorer, Gadgets, recovery, upgrade, reinstall, uninstall, and a
-nested multi-monitor session. The Internet Explorer compatibility component
+The current 0.2 beta line has been validated in clean online and offline Aero7
+virtual-machine installs for OOBE, login/lock, Start and taskbar interaction,
+Control Panel, File Explorer, Gadgets, screenshot/clipboard notifications,
+optional-package install/removal, recovery, upgrade, reinstall, uninstall, and
+a nested multi-monitor session. The Internet Explorer compatibility component
 was additionally tested with Firefox and Chromium for URL delegation,
 new-window and private-window actions, stable taskbar grouping, and a
 frame-by-frame startup check with no duplicate browser tile.

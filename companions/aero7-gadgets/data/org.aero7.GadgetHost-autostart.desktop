@@ -2,8 +2,9 @@
 Type=Application
 Name=Aero7 Desktop Gadgets
 Comment=Restore desktop gadget instances
-Exec=aero7-gadget-host
+Exec=/usr/bin/aero7-gadget-host
 Icon=aero7-gadget-gallery
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management
 OnlyShowIn=KDE;
 X-KDE-autostart-phase=2
 X-KDE-StartupNotify=false

@@ -51,7 +51,7 @@ cp "$project_root/packaging/arch/PKGBUILD" "$package_root/PKGBUILD"
 
 (
     cd "$package_root"
-    makepkg -s --noconfirm --cleanbuild
+    AERO7_INSTALL_TEST_TOOLS=ON makepkg -s --noconfirm --cleanbuild
 )
 package_file="$(find "$package_root" -maxdepth 1 -type f \
     -name "aero7-desktop-$version-*.pkg.tar.*" ! -name '*-debug-*' -print -quit)"
@@ -66,4 +66,4 @@ if [[ "${AERO7_VM_FULL_PACKAGE_LIFECYCLE:-0}" == 1 ]]; then
     "$project_root/tests/vm/test-uninstall.sh" "$package_file"
 fi
 
-"$project_root/tests/vm/test-session.sh"
+"$project_root/tests/vm/test-session.sh" --expect-test-tools

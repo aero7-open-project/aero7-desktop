@@ -8,8 +8,10 @@
 #include <QTimer>
 #include <QVariantAnimation>
 #include <QWidget>
+#include <memory>
 
 class GadgetManager;
+class RuntimeServices;
 class QScreen;
 
 namespace LayerShellQt { class Window; }
@@ -20,7 +22,8 @@ class GadgetWindow final : public QWidget
     Q_PROPERTY(qreal controlsOpacity READ controlsOpacity WRITE setControlsOpacity)
 
 public:
-    GadgetWindow(const GadgetDefinition &definition, GadgetState state, GadgetManager *manager);
+    GadgetWindow(const GadgetDefinition &definition, GadgetState state, GadgetManager *manager,
+                 RuntimeServices *services = nullptr);
     ~GadgetWindow() override = default;
 
     QString instanceId() const { return m_state.instance; }
@@ -54,6 +57,9 @@ private slots:
     void previousSlide();
 
 private:
+    // Allows the headless regression to attach a real LayerShellQt wrapper;
+    // native compositor behaviour is checked separately in the QA VM.
+    friend class GalleryTest;
     enum class Control { None, Close, Size, Options, Drag };
 
     QRect bodyRect() const;
@@ -67,24 +73,32 @@ private:
     void setOpacityPercent(int percent);
     void setAlwaysOnTop(bool enabled);
     void initializeRuntime();
+    void updateNetworkTimer();
+    QString networkDataKey() const;
     void initializePuzzle();
     void movePuzzleTile(const QPoint &position);
     void loadSlides();
-    void showSlideAt(int index);
+    bool showSlideAt(int index, int direction = 1);
     void handleCalendarClick(const QPoint &position);
     void handleCurrencyClick(const QPoint &position);
     bool handleSlideClick(const QPoint &position);
     void openFeedItem(const QPoint &position);
-    void handleMediaClick(const QPoint &position);
+    bool handleMediaClick(const QPoint &position);
     void paintControls(QPainter &painter);
+    void beginLayerDrag();
+    void moveDragPreview(const QPoint &position);
 
     GadgetDefinition m_definition;
     GadgetState m_state;
     GadgetManager *m_manager = nullptr;
+    RuntimeServices *m_services = nullptr;
+    QString m_networkDataKey;
     GadgetRenderData m_data;
     bool m_dragging = false;
     QPoint m_dragOffset;
-    QPoint m_dragStartPosition;
+    QPoint m_dragTarget;
+    std::unique_ptr<QWidget> m_dragPreview;
+    LayerShellQt::Window *m_dragPreviewLayer = nullptr;
     Control m_pressedControl = Control::None;
     qreal m_controlsOpacity = 0.0;
     QPropertyAnimation m_controlsAnimation;

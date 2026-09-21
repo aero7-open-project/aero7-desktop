@@ -24,12 +24,28 @@ class SessionArtifactsTest(unittest.TestCase):
         if validator is None:
             self.skipTest("desktop-file-utils is not installed")
         files = list((ROOT / "packaging" / "session").glob("*.desktop"))
+        files.extend((ROOT / "tests" / "visual").glob("*.desktop"))
         files.extend((ROOT / "packaging" / "applications").glob("*.desktop"))
         for path in files:
             subprocess.run(
                 (validator, str(path)),
                 check=True,
             )
+
+    def test_baloo_worker_has_a_hidden_portal_identity(self):
+        desktop = self.read_desktop_path(
+            ROOT / "packaging/applications/org.kde.baloo.desktop"
+        )
+        self.assertEqual(desktop["Type"], "Application")
+        self.assertEqual(desktop["Exec"], "/usr/lib/kf6/baloo_file_extractor")
+        self.assertEqual(desktop["TryExec"], desktop["Exec"])
+        self.assertEqual(desktop["NoDisplay"], "true")
+        self.assertEqual(desktop["Terminal"], "false")
+        self.assertEqual(desktop["StartupNotify"], "false")
+        self.assertNotIn("Hidden", desktop)
+        cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+        self.assertIn("install(FILES packaging/applications/org.kde.baloo.desktop", cmake)
+        self.assertFalse((ROOT / "packaging/autostart/org.kde.baloo.desktop").exists())
 
     def test_file_explorer_route_uses_the_full_fork_identity(self):
         package = (ROOT / "packaging/arch/PKGBUILD").read_text(encoding="utf-8")
@@ -40,6 +56,17 @@ class SessionArtifactsTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("applications:org.aero7.FileExplorer.desktop", layout)
+
+    def test_retired_native_surfaces_are_not_reintroduced(self):
+        for surface in ("start", "taskbar", "tray", "desktop", "controlpanel", "notifications"):
+            self.assertFalse(any((ROOT / "shell" / surface).glob("*")), surface)
+
+    def test_package_uses_current_optional_dependency_names(self):
+        package = (ROOT / "packaging/arch/PKGBUILD").read_text(encoding="utf-8")
+        self.assertIn("'aero7-device-manager'", package)
+        required, optional = package.split("optdepends=(", 1)
+        self.assertNotIn("'aero7-programs-center-git'", required)
+        self.assertIn("aero7-programs-center-git: optional", optional)
 
     def test_new_sessions_use_the_windows_7_factory_pin_order(self):
         layout = (ROOT / "services/session/aero7-shell-layout.js").read_text(
@@ -92,7 +119,7 @@ class SessionArtifactsTest(unittest.TestCase):
             '[[ ! -e "$state_home/visual-defaults-v2.applied" ]]', setup
         )
         self.assertIn("reload_aeroshell_after_appearance_repair", setup)
-        self.assertIn("if ((reconcile_only)); then", setup)
+        self.assertIn("if ((reconcile_only && !layout_only)); then", setup)
         self.assertIn(
             "systemctl --user restart plasma-plasmashell.service", setup
         )

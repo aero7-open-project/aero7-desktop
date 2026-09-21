@@ -1,0 +1,28 @@
+pkgname=aero7-credential-vault
+pkgver=0.1.0
+pkgrel=7
+pkgdesc='Optional encrypted Credential Manager for Aero7'
+arch=('x86_64')
+url='https://github.com/aero7-open-project/aero7-desktop'
+license=('GPL-3.0-or-later' 'AGPL-3.0-or-later')
+depends=('glibc' 'gcc-libs' 'qt6-base' 'kwallet>=6.29.0' 'aero7-qt')
+makedepends=('cmake' 'ninja')
+options=('!debug')
+# Local release preparation supplies a reviewed source archive and replaces
+# this placeholder with its actual digest before makepkg is invoked.
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('REPLACE_WITH_REVIEWED_SOURCE_SHA256')
+
+build() {
+  cmake -S "$pkgname" -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=ON
+  cmake --build build --parallel 2
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

@@ -19,6 +19,9 @@ Aero taskbar for each active display.
 
 ## Display settings
 
+The [1920×1080 VM gallery](Screenshots) includes the Screen Resolution page at
+100% scale. It shows the virtual monitor's actual mode, not a resized image.
+
 Open **Screen Resolution** through Control Panel or the desktop context menu.
 The Aero7 display page uses the real KScreen backend for resolution, refresh
 rate, orientation, scaling, primary-display selection, enable/disable, and

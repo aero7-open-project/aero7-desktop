@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 
 #include "GadgetTypes.h"
 
@@ -13,7 +14,7 @@ struct GadgetRenderData {
     double memoryPercent = 53.0;
     quint64 memoryUsed = 0;
     quint64 memoryTotal = 0;
-    double currencyRate = 1.17;
+    double currencyRate = 0.0;
     QString currencyUpdated;
     bool currencyStale = false;
     double temperature = 20.0;
@@ -23,6 +24,8 @@ struct GadgetRenderData {
     QString error;
     QStringList feedTitles;
     QStringList feedLinks;
+    bool feedLoaded = false;
+    bool feedStale = false;
     int feedPage = 0;
     QImage slideImage;
     QImage previousSlideImage;
@@ -50,6 +53,7 @@ public:
     static void paint(QPainter &painter, const GadgetDefinition &definition, const GadgetState &state,
                       const GadgetRenderData &data, const QRect &rect);
     static QPixmap preview(const GadgetDefinition &definition, const QSize &size);
+    static std::array<QRectF, 3> mediaControlRects(const QRect &rect);
 
 private:
     static void calendar(QPainter &, const GadgetState &, const GadgetRenderData &, const QRect &);

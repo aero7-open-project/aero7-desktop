@@ -50,6 +50,12 @@ isolated AeroTheme workcopy.
 
 ## Implementations found
 
+Historical note (Beta 2 cleanup, 2026-09-05): the native duplicate surfaces
+described below were removed from source along with their obsolete launchers,
+units, and tests. This section describes the original 0.2.0-1 system, not the
+current installed desktop. Recovery uses the dedicated recovery UI and session
+service; the retired taskbar/Start/tray are not recovery components.
+
 ### Panels and Start menus
 
 The installed system has two complete implementations:

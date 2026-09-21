@@ -8,6 +8,7 @@
 #include <QRadialGradient>
 #include <QTimeZone>
 #include <QtMath>
+#include <cmath>
 
 namespace {
 void roundedPanel(QPainter &p, const QRectF &r, const QColor &top, const QColor &bottom, qreal radius = 5.0)
@@ -200,7 +201,10 @@ void GadgetPainter::paint(QPainter &painter, const GadgetDefinition &definition,
 
 QPixmap GadgetPainter::preview(const GadgetDefinition &definition, const QSize &size)
 {
-    QPixmap pixmap(size * qApp->devicePixelRatio());
+    // Render the existing gadget at its native size, then scale the complete
+    // image. Passing a thumbnail rectangle directly to the painter leaves
+    // fixed-size fonts/spacing unscaled and clips labels and day numbers.
+    QPixmap pixmap(definition.smallSize * qApp->devicePixelRatio());
     pixmap.setDevicePixelRatio(qApp->devicePixelRatio());
     pixmap.fill(Qt::transparent);
     QPainter painter(&pixmap);
@@ -211,10 +215,23 @@ QPixmap GadgetPainter::preview(const GadgetDefinition &definition, const QSize &
                       {QStringLiteral("amount"), 1.0}, {QStringLiteral("location"), QStringLiteral("Amsterdam")},
                       {QStringLiteral("timezone"), QStringLiteral("Europe/Amsterdam")}};
     GadgetRenderData data;
+    // Gallery samples are illustrative; runtime data does not invent readings.
+    data.currencyRate = 1.17;
+    data.weatherUpdated = QStringLiteral("2026-01-01T12:00");
     data.feedTitles = {QStringLiteral("Aero7 News")};
     if (definition.id.endsWith(QStringLiteral("slideshow"))) data.slideImage = sampleFlowerImage();
-    paint(painter, definition, state, data, QRect(QPoint(), size));
-    return pixmap;
+    paint(painter, definition, state, data, QRect(QPoint(), definition.smallSize));
+    painter.end();
+    const QPixmap scaled = pixmap.scaled(size * pixmap.devicePixelRatio(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    // Keep a fixed thumbnail canvas so every gallery label shares a baseline.
+    QPixmap thumbnail(size * pixmap.devicePixelRatio());
+    thumbnail.setDevicePixelRatio(pixmap.devicePixelRatio());
+    thumbnail.fill(Qt::transparent);
+    QPainter thumbnailPainter(&thumbnail);
+    const QSize logicalSize = scaled.size() / scaled.devicePixelRatio();
+    thumbnailPainter.drawPixmap((size.width() - logicalSize.width()) / 2,
+                                (size.height() - logicalSize.height()) / 2, scaled);
+    return thumbnail;
 }
 
 void GadgetPainter::calendar(QPainter &p, const GadgetState &state, const GadgetRenderData &data, const QRect &rect)
@@ -381,14 +398,23 @@ void GadgetPainter::currency(QPainter &p, const GadgetState &state, const Gadget
     QFont codeFont(QStringLiteral("Segoe UI"), state.size == QStringLiteral("large") ? 10 : 7, QFont::DemiBold);
     p.setPen(Qt::white);
     p.setFont(amountFont);
-    const int half = rect.height() / 2;
+    const bool cached = data.currencyRate > 0 && (data.currencyStale || !data.error.isEmpty());
+    const bool showStatus = cached || !data.error.isEmpty()
+        || (state.size == QStringLiteral("large") && !data.currencyUpdated.isEmpty());
+    const int half = (rect.height() - (showStatus ? 14 : 0)) / 2;
     p.drawText(QRect(rect.left() + 10, rect.top() + 7, rect.width() - 55, half - 8), Qt::AlignVCenter | Qt::AlignRight, QString::number(amount, 'f', 2));
     p.drawText(QRect(rect.left() + 10, rect.top() + half, rect.width() - 55, half - 7), Qt::AlignVCenter | Qt::AlignRight,
                data.currencyRate > 0 ? QString::number(amount * data.currencyRate, 'f', 2) : QStringLiteral("--"));
     p.setFont(codeFont);
     p.drawText(QRect(rect.right() - 46, rect.top() + 7, 39, half - 8), Qt::AlignCenter, base + QStringLiteral("  ▾"));
     p.drawText(QRect(rect.right() - 46, rect.top() + half, 39, half - 7), Qt::AlignCenter, target + QStringLiteral("  ▾"));
-    if (data.currencyRate <= 0.0 && !data.error.isEmpty()) {
+    if (cached) {
+        p.setFont(QFont(QStringLiteral("Segoe UI"), state.size == QStringLiteral("large") ? 8 : 6));
+        p.setPen(QColor(255, 247, 197));
+        const QString status = state.size == QStringLiteral("large")
+            ? QStringLiteral("Cached rate: ") + data.currencyUpdated : QStringLiteral("Cached rate");
+        p.drawText(QRectF(panel.left() + 5, panel.bottom() - 15, panel.width() - 10, 12), Qt::AlignCenter, status);
+    } else if (data.currencyRate <= 0.0 && !data.error.isEmpty()) {
         p.setFont(QFont(QStringLiteral("Segoe UI"), state.size == QStringLiteral("large") ? 8 : 6));
         p.setPen(QColor(255, 247, 197));
         p.drawText(QRectF(panel.left() + 5, panel.bottom() - 15, panel.width() - 10, 12), Qt::AlignCenter,
@@ -413,7 +439,8 @@ void GadgetPainter::feeds(QPainter &p, const GadgetState &state, const GadgetRen
     p.setFont(title); p.setPen(Qt::white);
     p.drawText(QRectF(panel.left() + 8, panel.top() + 4, panel.width() - headerHeight - 3, headerHeight - 5), Qt::AlignVCenter, QStringLiteral("Feed Headlines"));
     QStringList titles = data.feedTitles;
-    if (titles.isEmpty()) titles << QStringLiteral("View headlines");
+    if (titles.isEmpty()) titles << (!data.error.isEmpty() ? QStringLiteral("Feed unavailable")
+                                    : data.feedLoaded ? QStringLiteral("No headlines") : QStringLiteral("Loading headlines..."));
     QFont body(QStringLiteral("Segoe UI"), state.size == QStringLiteral("large") ? 9 : 7);
     p.setFont(body);
     const int lineHeight = state.size == QStringLiteral("large") ? 31 : 23;
@@ -424,11 +451,12 @@ void GadgetPainter::feeds(QPainter &p, const GadgetState &state, const GadgetRen
         p.drawText(line, Qt::AlignVCenter | Qt::TextSingleLine, p.fontMetrics().elidedText(titles.at(i), Qt::ElideRight, int(line.width())));
         p.setPen(QColor(255, 255, 255, 25)); p.drawLine(line.bottomLeft(), line.bottomRight());
     }
-    if (!data.error.isEmpty()) {
+    if (data.feedStale || !data.error.isEmpty()) {
         p.setPen(QColor(185, 201, 210)); p.setFont(QFont(QStringLiteral("Segoe UI"), state.size == QStringLiteral("large") ? 8 : 6));
-        p.drawText(QRectF(panel.left() + 7, panel.bottom() - 15, panel.width() - 14, 12), Qt::AlignLeft | Qt::AlignVCenter,
-                   state.size == QStringLiteral("large") ? QStringLiteral("Feed unavailable — using saved headlines")
-                                                          : QStringLiteral("Feed unavailable"));
+        const QRectF footer(panel.left() + 7, panel.bottom() - 15, panel.width() - 14, 12);
+        const QString label = data.feedTitles.isEmpty() ? QStringLiteral("Feed unavailable") : QStringLiteral("Cached headlines");
+        p.drawText(footer, Qt::AlignLeft | Qt::AlignVCenter,
+                   p.fontMetrics().elidedText(label, Qt::ElideRight, int(footer.width())));
     }
 }
 
@@ -535,6 +563,18 @@ void GadgetPainter::weather(QPainter &p, const GadgetState &state, const GadgetR
     QFont locationFont(QStringLiteral("Segoe UI"), large ? 12 : 8, QFont::DemiBold);
     p.setFont(locationFont); p.setPen(QColor(17, 62, 87));
     p.drawText(QRectF(panel.left() + 8, panel.top() + 5, panel.width() - 16, large ? 24 : 17), Qt::AlignLeft | Qt::AlignVCenter, location);
+    const bool hasReading = !data.weatherUpdated.isEmpty() && std::isfinite(data.temperature)
+        && data.weatherCode >= 0 && data.weatherCode <= 99;
+    if (!hasReading) {
+        p.setFont(QFont(QStringLiteral("Segoe UI"), large ? 31 : 19, QFont::Light));
+        p.drawText(QRectF(panel.left() + 4, panel.top() + panel.height() * .30,
+                         panel.width() - 8, panel.height() * .42), Qt::AlignCenter, QStringLiteral("--"));
+        p.setFont(QFont(QStringLiteral("Segoe UI"), large ? 10 : 7));
+        p.drawText(QRectF(panel.left() + 4, panel.bottom() - (large ? 30 : 21),
+                         panel.width() - 8, large ? 25 : 18), Qt::AlignCenter,
+                   data.error.isEmpty() ? QStringLiteral("Updating...") : QStringLiteral("Weather unavailable"));
+        return;
+    }
     const QPointF iconCenter(panel.left() + panel.width() * (large ? .29 : .25), panel.top() + panel.height() * (large ? .34 : .58));
     const qreal radius = panel.height() * (large ? .13 : .25);
     const int hour = QTime::currentTime().hour();
@@ -546,8 +586,14 @@ void GadgetPainter::weather(QPainter &p, const GadgetState &state, const GadgetR
                Qt::AlignCenter, QString::number(qRound(data.temperature)) + QChar(0x00b0));
     QFont condition(QStringLiteral("Segoe UI"), large ? 10 : 7, QFont::DemiBold);
     p.setFont(condition);
-    p.drawText(QRectF(panel.left() + panel.width() * .43, panel.top() + panel.height() * (large ? .42 : .65), panel.width() * .53, panel.height() * (large ? .12 : .22)),
-               Qt::AlignCenter, data.error.isEmpty() ? weatherText(data.weatherCode) : QStringLiteral("Weather unavailable"));
+    const QRectF conditionRect(panel.left() + panel.width() * .43,
+                               panel.top() + panel.height() * (large ? .42 : .65),
+                               panel.width() * .53, panel.height() * (large ? .12 : .22));
+    const bool cached = data.weatherStale || !data.error.isEmpty();
+    const QString status = cached ? (large ? QStringLiteral("Cached weather") : QStringLiteral("Cached"))
+                                  : weatherText(data.weatherCode);
+    p.drawText(conditionRect, Qt::AlignCenter,
+               p.fontMetrics().elidedText(status, Qt::ElideRight, qFloor(conditionRect.width()) - 2));
     if (large) {
         const qreal forecastTop = panel.top() + panel.height() * .62;
         const qreal columnWidth = panel.width() / 3.0;
@@ -564,13 +610,23 @@ void GadgetPainter::weather(QPainter &p, const GadgetState &state, const GadgetR
             p.drawText(QRectF(column.left(), column.bottom() - 20, column.width(), 18), Qt::AlignCenter,
                        QString::number(qRound(temperature)) + QChar(0x00b0));
         }
-    } else if (data.weatherStale && !data.weatherUpdated.isEmpty()) {
+    } else if (cached) {
         p.setPen(QColor(17, 62, 87, 190));
         p.setFont(QFont(QStringLiteral("Segoe UI"), 6));
         p.drawText(QRectF(panel.left() + 5, panel.bottom() - 12, panel.width() - 10, 10), Qt::AlignRight,
-                   QStringLiteral("Updated ") + data.weatherUpdated.section(QLatin1Char('T'), 1, 1).left(5));
+                   QDateTime::fromString(data.weatherUpdated, Qt::ISODate).toString(QStringLiteral("dd MMM HH:mm")));
     }
     Q_UNUSED(fahrenheit)
+}
+
+std::array<QRectF, 3> GadgetPainter::mediaControlRects(const QRect &rect)
+{
+    const QRectF panel = QRectF(rect).adjusted(2, 2, -2, -2);
+    const qreal center = panel.center().x();
+    const qreal y = panel.top() + panel.height() * .77;
+    return {QRectF(center - 42 - 12, y - 12, 24, 24),
+            QRectF(center - 12, y - 12, 24, 24),
+            QRectF(center + 42 - 12, y - 12, 24, 24)};
 }
 
 void GadgetPainter::mediaCenter(QPainter &p, const GadgetState &, const GadgetRenderData &data, const QRect &rect)
@@ -605,17 +661,21 @@ void GadgetPainter::mediaCenter(QPainter &p, const GadgetState &, const GadgetRe
         p.setPen(QPen(QColor(255, 255, 255, 100), 1)); p.drawRect(artRect.adjusted(0, 0, -1, -1));
     }
     const int textLeft = data.mediaArt.isNull() ? int(panel.left()) + 16 : int(panel.left()) + 66;
+    p.setPen(Qt::white);
     p.drawText(QRectF(textLeft, panel.top() + panel.height() * .37, panel.right() - textLeft - 12, 20), Qt::AlignLeft | Qt::AlignVCenter,
                data.mediaAvailable ? QStringLiteral("Now Playing") : QStringLiteral("Music"));
     p.drawText(QRectF(textLeft, panel.top() + panel.height() * .51, panel.right() - textLeft - 28, 22), Qt::AlignLeft | Qt::AlignVCenter,
                data.mediaAvailable ? data.mediaTitle : QStringLiteral("Pictures"));
     p.drawText(QRectF(textLeft, panel.top() + panel.height() * .64, panel.right() - textLeft - 28, 22), Qt::AlignLeft | Qt::AlignVCenter,
                data.mediaAvailable ? data.mediaArtist : QStringLiteral("Music + Pictures"));
-    const qreal controlsY = panel.top() + panel.height() * .77;
-    const qreal controlsCenter = panel.center().x();
+    const auto controlRects = mediaControlRects(rect);
+    const qreal controlsY = controlRects[1].center().y();
+    const qreal controlsCenter = controlRects[1].center().x();
     p.setPen(QPen(Qt::white, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    QPainterPath previous; previous.moveTo(controlsCenter - 38, controlsY - 6); previous.lineTo(controlsCenter - 46, controlsY); previous.lineTo(controlsCenter - 38, controlsY + 6); p.drawPath(previous);
-    QPainterPath next; next.moveTo(controlsCenter + 38, controlsY - 6); next.lineTo(controlsCenter + 46, controlsY); next.lineTo(controlsCenter + 38, controlsY + 6); p.drawPath(next);
+    const qreal previousCenter = controlRects[0].center().x();
+    const qreal nextCenter = controlRects[2].center().x();
+    QPainterPath previous; previous.moveTo(previousCenter + 4, controlsY - 6); previous.lineTo(previousCenter - 4, controlsY); previous.lineTo(previousCenter + 4, controlsY + 6); p.drawPath(previous);
+    QPainterPath next; next.moveTo(nextCenter - 4, controlsY - 6); next.lineTo(nextCenter + 4, controlsY); next.lineTo(nextCenter - 4, controlsY + 6); p.drawPath(next);
     if (data.mediaPlaying) {
         p.drawLine(QPointF(controlsCenter - 3, controlsY - 6), QPointF(controlsCenter - 3, controlsY + 6));
         p.drawLine(QPointF(controlsCenter + 3, controlsY - 6), QPointF(controlsCenter + 3, controlsY + 6));

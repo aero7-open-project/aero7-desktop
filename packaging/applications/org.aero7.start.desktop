@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Aero7 Start Menu
-Comment=Aero7 programs, places, search, and session controls
-Exec=/usr/bin/aero7-start
-Icon=start-here
-Terminal=false
-NoDisplay=true

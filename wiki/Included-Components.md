@@ -36,8 +36,8 @@ are not installed or started in a normal session.
 
 ## Internet Explorer compatibility
 
-Aero7 provides a permanent Internet Explorer entry in Start, on the desktop,
-and on the taskbar. It is a compatibility launcher, not the retired Microsoft
+Aero7 provides a permanent Internet Explorer entry in Start and on the
+taskbar, with a desktop shortcut available when deliberately added. It is a compatibility launcher, not the retired Microsoft
 browser engine. URLs are safely delegated to a supported installed browser,
 such as Firefox or Chromium, while the Aero7 shell retains the familiar icon,
 name, grouping, jump list, new-window action, and InPrivate action.
@@ -62,3 +62,19 @@ The native Gadgets runtime includes:
 
 The artwork and runtime are original Aero7 implementations. Microsoft gadget
 resources are not redistributed.
+
+See [Desktop Gadgets](Desktop-Gadgets) for each gadget's purpose, settings,
+network requirements, persistence, and migration from older test widgets.
+
+## Administration and optional software
+
+Computer Management supplies administration routes such as services, event
+logs, users/groups, storage, shared folders, and scheduled tasks. Device
+Manager is a separate hardware-information application, distributed as
+`aero7-device-manager`; a Windows-style name does not imply Windows drivers
+can be installed into Linux.
+
+Programs Center Beta is an optional graphical software manager. It is not
+required to keep the desktop installed. Use [Optional Features](Optional-Features)
+for the full distinction between core components, installable services, and
+unavailable Windows equivalents.

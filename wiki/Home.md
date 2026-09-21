@@ -19,8 +19,28 @@ installed modern browser.
 The current release line is a beta. It is suitable for Aero7 testing and daily
 evaluation, but some physical-hardware combinations still need certification.
 
+The 21 September rebuilt online and disconnected offline test candidates both
+completed clean installation, OOBE, login and exported-log validation with
+Desktop `0.2.0-33`. This validates the selected VM stack; it does not publish a
+final ISO or replace the physical-hardware limits in [Known Issues](Known-Issues).
+
+[![Aero7 Desktop at native 1920×1080](images/beta2-1080p/desktop.png)](Screenshots)
+
+The image is an arranged documentation VM. The later clean-install acceptance
+is recorded separately, and the [capture tour](Screenshots) keeps the exact
+package versions and visible limits of each screenshot set.
+
 ## Start here
 
+- **[1920×1080 Screenshot Tour](Screenshots)** — new real VM captures, package
+  versions, and a clear distinction from final-ISO acceptance
+- **[First Login and Defaults](First-Login-and-Defaults)** — factory pins,
+  Recycle Bin, login keyboard, lock screen, and fallback sessions
+- **[Screenshots and Clipboard](Screenshots-and-Clipboard)** — Meta+Shift+S,
+  PNG saving, image paste, notifications, and troubleshooting
+- **[Desktop Gadgets](Desktop-Gadgets)** — all nine built-ins and their limits
+- **[Optional Features](Optional-Features)** — Programs Center Beta and the
+  supported optional services
 - **[Installation and Updates](Installation-and-Updates)** — install from the
   Aero7 pacman repository and select the desktop session
 - **[Desktop User Guide](Desktop-User-Guide)** — use the desktop, taskbar,

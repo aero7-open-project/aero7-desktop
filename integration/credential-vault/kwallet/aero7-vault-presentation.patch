@@ -1,0 +1,181 @@
+diff --git a/src/runtime/ksecretd/CMakeLists.txt b/src/runtime/ksecretd/CMakeLists.txt
+index b49877d..74903f1 100644
+--- a/src/runtime/ksecretd/CMakeLists.txt
++++ b/src/runtime/ksecretd/CMakeLists.txt
+@@ -33,6 +33,7 @@ add_subdirectory(autotests)
+ ########### ksecretd ###############
+
+ add_executable(ksecretd)
++qt_add_resources(ksecretd aero7_vault_icon PREFIX /aero7-vault FILES credential-vault.png)
+
+ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../kwalletbackend)
+ include_directories(${CMAKE_CURRENT_BINARY_DIR}/../kwalletbackend)
+@@ -176,4 +177,3 @@ endif()
+ install( FILES ksecretd.notifyrc DESTINATION  ${KDE_INSTALL_KNOTIFYRCDIR} )
+ install( FILES org.kde.ksecretd.desktop DESTINATION ${KDE_INSTALL_APPDIR} )
+ install( FILES kwallet.portal DESTINATION ${KDE_INSTALL_DATADIR}/xdg-desktop-portal/portals)
+-
+diff --git a/src/runtime/ksecretd/knewwalletdialog.cpp b/src/runtime/ksecretd/knewwalletdialog.cpp
+index b6dbd2a..5a82a59 100644
+--- a/src/runtime/ksecretd/knewwalletdialog.cpp
++++ b/src/runtime/ksecretd/knewwalletdialog.cpp
+@@ -7,6 +7,7 @@
+
+ #include "knewwalletdialog.h"
+ #include "ksecretd_debug.h"
++#include "aero7vaultpresentation.h"
+ #include <KLocalizedString>
+ #include <KMessageBox>
+ #include <QTableWidget>
+@@ -22,6 +23,7 @@ namespace KWallet
+ KNewWalletDialog::KNewWalletDialog(const QString &appName, const QString &walletName, QWidget *parent)
+     : QWizard(parent)
+ {
++    Aero7VaultPresentation::decorate(this, walletName);
+     setOption(HaveFinishButtonOnEarlyPages);
+     _intro = new KNewWalletDialogIntro(appName, walletName, this);
+     _introId = addPage(_intro);
+@@ -45,7 +47,10 @@ KNewWalletDialogIntro::KNewWalletDialogIntro(const QString &appName, const QStri
+     : QWizardPage(parent)
+ {
+     _ui.setupUi(this);
+-    if (appName.isEmpty()) {
++    if (Aero7VaultPresentation::owns(walletName)) {
++        _ui.ktitlewidget->setComment(Aero7VaultPresentation::title(walletName));
++        _ui.labelIntro->setText(Aero7VaultPresentation::prompt(Aero7VaultPresentation::Request::CreateFormat, appName));
++    } else if (appName.isEmpty()) {
+         _ui.labelIntro->setText(
+             i18n("<qt>KDE has requested to create a new wallet named '<b>%1</b>'. This is used to store sensitive data in a secure fashion. Please choose the "
+                  "new wallet's type below or click cancel to deny the application's request.</qt>",
+diff --git a/src/runtime/ksecretd/ksecretd.cpp b/src/runtime/ksecretd/ksecretd.cpp
+index 6143cbc..dea4c8d 100644
+--- a/src/runtime/ksecretd/ksecretd.cpp
++++ b/src/runtime/ksecretd/ksecretd.cpp
+@@ -8,6 +8,7 @@
+
+ #include "ksecretd.h"
+ #include "ksecretd_debug.h"
++#include "aero7vaultpresentation.h"
+
+ #include "kbetterthankdialog.h"
+ #include "kwalletfreedesktopcollection.h"
+@@ -517,7 +518,9 @@ int KSecretD::internalOpen(const QString &appid, const QString &wallet, bool isP
+                         b = new KWallet::Backend(wallet, isPath);
+                     }
+                     KPasswordDialog *kpd = new KPasswordDialog();
+-                    if (appid.isEmpty()) {
++                    if (Aero7VaultPresentation::owns(wallet)) {
++                        kpd->setPrompt(Aero7VaultPresentation::prompt(Aero7VaultPresentation::Request::Unlock, appid));
++                    } else if (appid.isEmpty()) {
+                         kpd->setPrompt(i18n("<qt>KDE has requested to open the wallet '<b>%1</b>'. Please enter the password for this wallet below.</qt>",
+                                             wallet.toHtmlEscaped()));
+                     } else {
+@@ -535,6 +538,10 @@ int KSecretD::internalOpen(const QString &appid, const QString &wallet, bool isP
+                     //              i18n( "&Open" ), "wallet-open"));
+                     kpd->setWindowTitle(i18n("KDE Wallet Service"));
+                     kpd->setIcon(QIcon::fromTheme(QStringLiteral("kwalletmanager")));
++                    if (Aero7VaultPresentation::owns(wallet)) {
++                        Aero7VaultPresentation::decorate(kpd, wallet);
++                        kpd->setIcon(Aero7VaultPresentation::icon());
++                    }
+
+ #if WITH_X11
+                     if (KWindowSystem::isPlatformX11() && w != KX11Extras::activeWindow() && w != 0L) {
+@@ -574,6 +581,9 @@ int KSecretD::internalOpen(const QString &appid, const QString &wallet, bool isP
+                                                     wallet.toHtmlEscaped(),
+                                                     rc,
+                                                     errorStr));
++                                if (Aero7VaultPresentation::owns(wallet)) {
++                                    kpd->setPrompt(Aero7VaultPresentation::openError(rc, errorStr));
++                                }
+                                 kpd->setPassword(QLatin1String(""));
+                             }
+                         } else {
+@@ -614,7 +624,9 @@ int KSecretD::internalOpen(const QString &appid, const QString &wallet, bool isP
+                 KNewPasswordDialog *kpd = new KNewPasswordDialog();
+                 KColorScheme colorScheme(QPalette::Active, KColorScheme::View);
+                 kpd->setBackgroundWarningColor(colorScheme.background(KColorScheme::NegativeBackground).color());
+-                if (wallet == KWallet::Backend::localWallet() || wallet == KWallet::Backend::networkWallet()) {
++                if (Aero7VaultPresentation::owns(wallet)) {
++                    kpd->setPrompt(Aero7VaultPresentation::prompt(Aero7VaultPresentation::Request::CreatePassword, appid));
++                } else if (wallet == KWallet::Backend::localWallet() || wallet == KWallet::Backend::networkWallet()) {
+                     // Auto create these wallets.
+                     if (appid.isEmpty()) {
+                         kpd->setPrompt(
+@@ -646,6 +658,10 @@ int KSecretD::internalOpen(const QString &appid, const QString &wallet, bool isP
+                 // KF5 FIXME what should we use now instead of this:
+                 //              kpd->setButtonGuiItem(KDialog::Ok,KGuiItem(i18n("C&reate"),"document-new"));
+                 kpd->setIcon(QIcon::fromTheme(QStringLiteral("kwalletmanager")));
++                if (Aero7VaultPresentation::owns(wallet)) {
++                    Aero7VaultPresentation::decorate(kpd, wallet);
++                    kpd->setIcon(Aero7VaultPresentation::icon());
++                }
+                 while (!b->isOpen()) {
+                     setupDialog(kpd, w, appid, modal);
+                     if (kpd->exec() == QDialog::Accepted) {
+@@ -656,6 +672,9 @@ int KSecretD::internalOpen(const QString &appid, const QString &wallet, bool isP
+                                                 wallet.toHtmlEscaped(),
+                                                 rc,
+                                                 KWallet::Backend::openRCToString(rc)));
++                            if (Aero7VaultPresentation::owns(wallet)) {
++                                kpd->setPrompt(Aero7VaultPresentation::openError(rc, KWallet::Backend::openRCToString(rc)));
++                            }
+                         }
+                     } else {
+                         break;
+@@ -747,7 +766,10 @@ bool KSecretD::isAuthorizedApp(const QString &appid, const QString &wallet, WId
+         if (!cfg.isEntryImmutable(wallet)) {
+             KBetterThanKDialog *dialog = new KBetterThanKDialog;
+             dialog->setWindowTitle(i18n("KDE Wallet Service"));
+-            if (appid.isEmpty()) {
++            Aero7VaultPresentation::decorate(dialog, wallet);
++            if (Aero7VaultPresentation::owns(wallet)) {
++                dialog->setLabel(Aero7VaultPresentation::prompt(Aero7VaultPresentation::Request::Access, appid));
++            } else if (appid.isEmpty()) {
+                 dialog->setLabel(i18n("<qt>KDE has requested access to the open wallet '<b>%1</b>'.</qt>", wallet.toHtmlEscaped()));
+             } else {
+                 dialog->setLabel(i18n("<qt>The application '<b>%1</b>' has requested access to the open wallet '<b>%2</b>'.</qt>",
+@@ -859,7 +881,7 @@ void KSecretD::doTransactionChangePassword(const QString &appid, const QString &
+         if (-1 == handle) {
+             KMessageBox::errorWId((WId)wId,
+                                   i18n("Unable to open wallet. The wallet must be opened in order to change the password."),
+-                                  i18n("KDE Wallet Service"));
++                                  Aero7VaultPresentation::title(wallet));
+             return;
+         }
+
+@@ -877,12 +899,18 @@ void KSecretD::doTransactionChangePassword(const QString &appid, const QString &
+                               i18n("<qt>The <b>%1</b> wallet is encrypted using GPG key <b>%2</b>. Please use <b>GPG</b> tools (such "
+                                    "as <b>kleopatra</b>) to change the passphrase associated to that key.</qt>",
+                                    wallet.toHtmlEscaped(),
+-                                   keyID));
++                                   keyID),
++                              Aero7VaultPresentation::owns(wallet) ? Aero7VaultPresentation::title(wallet) : QString());
+     } else {
+ #endif
+         QPointer<KNewPasswordDialog> kpd = new KNewPasswordDialog();
+         kpd->setPrompt(i18n("<qt>Please choose a new password for the wallet '<b>%1</b>'.</qt>", wallet.toHtmlEscaped()));
+         kpd->setWindowTitle(i18n("KDE Wallet Service"));
++        if (Aero7VaultPresentation::owns(wallet)) {
++            Aero7VaultPresentation::decorate(kpd, wallet);
++            kpd->setIcon(Aero7VaultPresentation::icon());
++            kpd->setPrompt(Aero7VaultPresentation::prompt(Aero7VaultPresentation::Request::ChangePassword, appid));
++        }
+         kpd->setAllowEmptyPasswords(true);
+         KColorScheme colorScheme(QPalette::Active, KColorScheme::View);
+         kpd->setBackgroundWarningColor(colorScheme.background(KColorScheme::NegativeBackground).color());
+@@ -893,12 +921,12 @@ void KSecretD::doTransactionChangePassword(const QString &appid, const QString &
+                 w->setPassword(p.toUtf8());
+                 int rc = w->close(true);
+                 if (rc < 0) {
+-                    KMessageBox::errorWId((WId)wId, i18n("Error re-encrypting the wallet. Password was not changed."), i18n("KDE Wallet Service"));
++                    KMessageBox::errorWId((WId)wId, i18n("Error re-encrypting the wallet. Password was not changed."), Aero7VaultPresentation::title(wallet));
+                     reclose = true;
+                 } else {
+                     rc = w->open(p.toUtf8());
+                     if (rc < 0) {
+-                        KMessageBox::errorWId((WId)wId, i18n("Error reopening the wallet. Data may be lost."), i18n("KDE Wallet Service"));
++                        KMessageBox::errorWId((WId)wId, i18n("Error reopening the wallet. Data may be lost."), Aero7VaultPresentation::title(wallet));
+                         reclose = true;
+                     }
+                 }

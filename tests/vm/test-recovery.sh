@@ -16,8 +16,18 @@ for _ in {1..100}; do
     sleep 0.25
 done
 [[ "$new_pid" =~ ^[1-9][0-9]*$ && "$new_pid" != "$old_pid" ]] || fail 'health service did not restart plasmashell'
-[[ "$(qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.shell)" == io.gitgud.wackyideas.desktop ]] \
-    || fail 'recovery started a stock Plasma shell'
+# A new PID exists before plasmashell has registered its D-Bus interface.
+# Wait for readiness rather than misreporting that startup interval as a stock
+# shell. A different non-empty shell identity is still a real failure.
+shell_identity=''
+for _ in {1..100}; do
+    shell_identity="$(qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.shell 2>/dev/null || true)"
+    [[ -n "$shell_identity" ]] && break
+    kill -0 "$new_pid" 2>/dev/null || fail 'restarted plasmashell exited before becoming ready'
+    sleep 0.25
+done
+[[ "$shell_identity" == io.gitgud.wackyideas.desktop ]] \
+    || fail "recovery shell did not become ready with the Aero identity: ${shell_identity:-unavailable}"
 pass "health service restarted the same AeroShell package ($old_pid -> $new_pid)"
 
 for _ in {1..80}; do

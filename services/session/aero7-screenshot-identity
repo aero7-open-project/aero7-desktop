@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Repair Aero7's legacy Spectacle override using its installed trusted entry.
+
+KWin authorizes the capture backend, not the Snipping Tool launcher. Hiding the
+backend from menus must not discard its desktop identity or permission metadata.
+No compositor permission checks are disabled here.
+"""
+
+import configparser
+import io
+import os
+from pathlib import Path
+import shlex
+import sys
+import tempfile
+
+
+def read_entry(path):
+    parser = configparser.ConfigParser(interpolation=None, strict=False)
+    parser.optionxform = str
+    parser.read(path, encoding="utf-8")
+    return parser
+
+
+def write_entry(parser, target, state, backup_name):
+    text = io.StringIO()
+    parser.write(text, space_around_delimiters=False)
+    content = text.getvalue()
+    if target.exists() and target.read_text(encoding="utf-8") == content:
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        state.mkdir(parents=True, exist_ok=True)
+        backup = state / backup_name
+        if not backup.exists():
+            backup.write_bytes(target.read_bytes())
+            backup.chmod(0o600)
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8",
+                                     dir=target.parent, delete=False) as output:
+        temporary = Path(output.name)
+        output.write(content)
+    try:
+        temporary.chmod(0o644)
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return True
+
+
+def reconcile(upstream, applications, state):
+    source = read_entry(upstream)
+    entry = source["Desktop Entry"]
+    permissions = entry.get("X-KDE-DBUS-Restricted-Interfaces", "").split(";")
+    if "org.kde.KWin.ScreenShot2" not in permissions:
+        raise RuntimeError("Installed Spectacle entry lacks screenshot authorization metadata")
+    target = applications / "org.kde.spectacle.desktop"
+    if target.exists():
+        previous = read_entry(target)
+        command = shlex.split(previous.get("Desktop Entry", "Exec", fallback=""))
+        if command and command[0] not in ("spectacle", "/usr/bin/spectacle"):
+            raise RuntimeError("Custom Spectacle launcher retained; review its application identity")
+    # Snipping Tool owns the visible entry and shortcut. Spectacle remains a
+    # resolvable service with its upstream executable and security properties.
+    entry["NoDisplay"] = "true"
+    entry.pop("Hidden", None)
+    entry.pop("X-KDE-Shortcuts", None)
+    changed = write_entry(source, target, state, "spectacle-before-identity.desktop")
+    # KWin 6.7 searches by executable and takes the first matching desktop
+    # service, not necessarily --desktopfile. The legacy Print entry must not
+    # be another direct Spectacle service without its permission properties.
+    print_target = applications / "aero7-snipping-tool-print.desktop"
+    if print_target.exists():
+        shortcut = read_entry(print_target)
+        command = shlex.split(shortcut.get("Desktop Entry", "Exec", fallback=""))
+        if command and command[0] in ("spectacle", "/usr/bin/spectacle"):
+            shortcut["Desktop Entry"]["Exec"] = "/usr/bin/aero7-snipping-tool --capture"
+            shortcut["Desktop Entry"]["TryExec"] = "/usr/bin/aero7-snipping-tool"
+            changed |= write_entry(shortcut, print_target, state,
+                                   "snipping-print-before-identity.desktop")
+    return changed
+
+
+if __name__ == "__main__":
+    try:
+        reconcile(Path("/usr/share/applications/org.kde.spectacle.desktop"),
+                  Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "applications",
+                  Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "aero7-desktop")
+    except (OSError, KeyError, ValueError, RuntimeError, configparser.Error) as error:
+        print(f"Aero7 screenshot identity: {error}", file=sys.stderr)
+        sys.exit(1)

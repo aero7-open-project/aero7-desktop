@@ -96,6 +96,52 @@ class ShellServiceTest(unittest.TestCase):
             "KvDark",
         )
 
+    def test_layout_only_repair_does_not_request_appearance_restart(self):
+        with mock.patch.object(service.os, "access", return_value=True), \
+             mock.patch.object(service.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            self.assertTrue(service.reconcile_layout(repair_appearance=False))
+        self.assertEqual(run.call_args.args[0][-1], "--reconcile-layout-only")
+
+    def test_appearance_repair_retains_restart_path(self):
+        with mock.patch.object(service.os, "access", return_value=True), \
+             mock.patch.object(service.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            self.assertTrue(service.reconcile_layout(repair_appearance=True))
+        self.assertEqual(run.call_args.args[0][-1], "--reconcile-only")
+
+    def test_repair_failure_is_not_reported_as_success(self):
+        with mock.patch.object(service.os, "access", return_value=True), \
+             mock.patch.object(service.subprocess, "run") as run:
+            run.return_value.returncode = 1
+            self.assertFalse(service.reconcile_layout(repair_appearance=False))
+
+    def test_supervisor_selects_repair_from_actual_appearance_state(self):
+        class EndIteration(Exception):
+            pass
+
+        for layout_valid, appearance_valid in ((False, True), (True, False), (False, False), (True, True)):
+            with self.subTest(layout=layout_valid, appearance=appearance_valid), \
+                 tempfile.TemporaryDirectory() as directory:
+                current = {
+                    "plasmashell_unit": {"active": "active"},
+                    "processes": {"plasmashell": True},
+                    "visible_shell": service.EXPECTED_SHELL,
+                    "layout": {"valid": layout_valid},
+                    "appearance": {"valid": appearance_valid},
+                }
+                with mock.patch.dict(service.os.environ, {"XDG_STATE_HOME": directory}), \
+                     mock.patch.object(service.signal, "signal"), \
+                     mock.patch.object(service, "snapshot", return_value=current), \
+                     mock.patch.object(service, "reconcile_layout", return_value=False) as repair, \
+                     mock.patch.object(service, "atomic_json", side_effect=EndIteration):
+                    with self.assertRaises(EndIteration):
+                        service.main()
+                if layout_valid and appearance_valid:
+                    repair.assert_not_called()
+                else:
+                    repair.assert_called_once_with(repair_appearance=not appearance_valid)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,9 @@
 # Desktop User Guide
 
+For the exact clean-account layout, session selector, lock screen, and upgrade
+behavior, start with [First Login and Defaults](First-Login-and-Defaults).
+The [screenshot tour](Screenshots) shows the installed test build at 1920×1080.
+
 ## Desktop
 
 The Aero7 desktop shows the configured wallpaper and desktop items on the
@@ -16,6 +20,12 @@ actions, and application search. Opening Start again closes the existing menu;
 the desktop does not create multiple Start instances.
 
 ## Taskbar
+
+Right-click empty taskbar space for window-arrangement commands, Task Manager,
+Lock the taskbar, and Properties. Right-click a program tile for that program's
+jump list and pinning actions. Right-click Start for its Properties/Explorer
+routes. These menus are different contexts; taskbar properties do not enable
+Plasma desktop edit mode.
 
 The taskbar combines pinned applications and running windows. Windows from the
 same application are grouped, with previews and jump-list actions where the
@@ -61,3 +71,16 @@ the normal Computer presentation.
 Open **Gadgets** from the desktop context menu to add Calendar, Clock, CPU
 Meter, Currency, Feed Headlines, Picture Puzzle, Slide Show, Weather, or Media
 Center. Gadget positions and the selected display are restored at login.
+
+Read [Desktop Gadgets](Desktop-Gadgets) for each built-in, network use, local
+settings, and migration from legacy test widgets.
+
+## Screenshots and optional features
+
+**Meta+Shift+S** opens rectangular selection. Release to save a PNG, copy the
+image, and receive an openable notification without opening the editor. See
+[Screenshots and Clipboard](Screenshots-and-Clipboard).
+
+Search Start for **Turn Aero7 features on or off** to manage supported
+optional services. **Programs Center Beta** is optional, while Desktop Core is
+required. See [Optional Features](Optional-Features) before changing packages.

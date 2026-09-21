@@ -171,12 +171,12 @@ def appearance_state() -> dict:
     }
 
 
-def reconcile_layout() -> bool:
+def reconcile_layout(*, repair_appearance: bool = True) -> bool:
     helper = "/usr/lib/aero7-desktop/aero7-session-setup"
     if not os.access(helper, os.X_OK):
         return False
     result = subprocess.run(
-        (helper, "--reconcile-only"),
+        (helper, "--reconcile-only" if repair_appearance else "--reconcile-layout-only"),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
@@ -284,7 +284,7 @@ def main() -> int:
                 layout = current.get("layout", {})
                 appearance = current.get("appearance", {})
                 if not layout.get("valid", False) or not appearance.get("valid", False):
-                    if reconcile_layout():
+                    if reconcile_layout(repair_appearance=not appearance.get("valid", False)):
                         current = snapshot()
                         reason = "layout/output" if not layout.get("valid", False) else "appearance"
                         log.write(f"{iso_now()} reconciled Aero {reason} state\n")

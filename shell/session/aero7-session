@@ -44,6 +44,14 @@ export AERO7_DESKTOP_SESSION=1
 # Compatibility contract of the independently packaged AeroThemePlasma
 # workspace. Aero7 owns the session while this shell remains the Phase 1 UI.
 export XDG_CONFIG_DIRS="/etc/xdg/aero7-desktop:/etc/xdg/aerothemeplasma:/etc/xdg${XDG_CONFIG_DIRS:+:$XDG_CONFIG_DIRS}"
+# Do not auto-activate a disabled wallet through the Secret portal. Preserve
+# enabled wallets and explicit user portal choices; all other portals stay as-is.
+if [[ -x /usr/lib/aero7-desktop/aero7-portal-policy ]]; then
+    portal_config_prefix="$(/usr/lib/aero7-desktop/aero7-portal-policy)"
+    if [[ -n "$portal_config_prefix" ]]; then
+        export XDG_CONFIG_DIRS="$portal_config_prefix:$XDG_CONFIG_DIRS"
+    fi
+fi
 export PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop
 export USE_UAC_AGENT=1
 if command -v kreadconfig6 >/dev/null 2>&1; then

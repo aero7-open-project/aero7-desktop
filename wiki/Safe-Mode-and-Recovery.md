@@ -2,7 +2,7 @@
 
 ## Safe Mode
 
-SDDM exposes two session choices:
+The Aero7 session package supplies these two choices:
 
 - **Aero7 Desktop** — the normal desktop
 - **Aero7 Desktop (Safe Mode)** — the same Aero7 shell with optional effects
@@ -10,6 +10,11 @@ SDDM exposes two session choices:
 
 Safe Mode backs up the normal KWin configuration before applying its temporary
 policy. It does not replace Aero7 with a stock Plasma desktop.
+
+An installation may additionally offer **AeroThemePlasma (Wayland)** and
+**Plasma (Wayland)** as explicit fallbacks. Select those deliberately in the
+login menu; they are not the same as Aero7 Safe Mode. See
+[First Login and Defaults](First-Login-and-Defaults).
 
 ## Recovery application
 
