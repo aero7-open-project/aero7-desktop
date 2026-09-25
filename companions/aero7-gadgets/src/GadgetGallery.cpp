@@ -7,11 +7,13 @@
 #include <QApplication>
 #include <QDesktopServices>
 #include <QDebug>
+#include <QDrag>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
@@ -41,18 +43,19 @@ QIcon ownedIcon(const QString &path)
 class GadgetList final : public QListWidget
 {
 public:
-    explicit GadgetList(GadgetManager *manager, QWidget *parent)
-        : QListWidget(parent), m_manager(manager) {}
+    explicit GadgetList(QWidget *parent)
+        : QListWidget(parent) {}
 
 protected:
     void mousePressEvent(QMouseEvent *event) override
     {
         QListWidget::mousePressEvent(event);
+        m_dragId.clear();
         if (event->button() == Qt::LeftButton) {
             if (QListWidgetItem *item = itemAt(event->position().toPoint())) {
                 m_dragId = item->data(idRole).toString();
                 m_dragIcon = item->icon().pixmap(64, 64);
-                m_pressGlobal = desktopPoint(event);
+                m_pressPosition = event->position().toPoint();
             }
         }
     }
@@ -60,19 +63,17 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override
     {
         if (!m_dragId.isEmpty() && event->buttons().testFlag(Qt::LeftButton)) {
-            const QPoint global = desktopPoint(event);
-            if (!m_dragging && (global - m_pressGlobal).manhattanLength() >= QApplication::startDragDistance()) {
-                m_dragging = true;
-                m_dragPreview = new QLabel(this, Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowTransparentForInput);
-                m_dragPreview->setAttribute(Qt::WA_TransparentForMouseEvents);
-                m_dragPreview->setAttribute(Qt::WA_ShowWithoutActivating);
-                m_dragPreview->setStyleSheet(QStringLiteral("background:transparent;"));
-                m_dragPreview->setPixmap(m_dragIcon);
-                m_dragPreview->setFixedSize(m_dragIcon.size());
-                m_dragPreview->show();
-            }
-            if (m_dragging) {
-                m_dragPreview->move(global + QPoint(10, 10));
+            if ((event->position().toPoint() - m_pressPosition).manhattanLength()
+                >= QApplication::startDragDistance()) {
+                auto *drag = new QDrag(this);
+                auto *mime = new QMimeData;
+                mime->setData("application/x-aero7-gadget", m_dragId.toUtf8());
+                drag->setMimeData(mime);
+                drag->setPixmap(m_dragIcon);
+                drag->setHotSpot(QPoint(m_dragIcon.width() / 2, m_dragIcon.height() / 2));
+                m_dragId.clear();
+                drag->exec(Qt::CopyAction);
+                drag->deleteLater();
                 event->accept();
                 return;
             }
@@ -82,49 +83,14 @@ protected:
 
     void mouseReleaseEvent(QMouseEvent *event) override
     {
-        if (event->button() == Qt::LeftButton && m_dragging) {
-            const QPoint global = desktopPoint(event);
-            if (!window()->geometry().contains(global)) {
-                m_manager->addGadgetAt(m_dragId, global);
-            }
-            clearDrag();
-            event->accept();
-            return;
-        }
-        clearDrag();
+        m_dragId.clear();
         QListWidget::mouseReleaseEvent(event);
     }
 
 private:
-    QPoint desktopPoint(const QMouseEvent *event) const
-    {
-        if (QGuiApplication::platformName().startsWith(QStringLiteral("wayland"))) {
-            // Wayland deliberately withholds global pointer coordinates, but
-            // Qt/KWin still exposes this top-level window's configured frame.
-            // Reconstruct the desktop point from the viewport-local event.
-            return window()->geometry().topLeft()
-                + viewport()->mapTo(window(), event->position().toPoint());
-        }
-        return event->globalPosition().toPoint();
-    }
-
-    void clearDrag()
-    {
-        if (m_dragPreview) {
-            m_dragPreview->deleteLater();
-            m_dragPreview = nullptr;
-        }
-        m_dragId.clear();
-        m_dragIcon = {};
-        m_dragging = false;
-    }
-
-    GadgetManager *m_manager;
-    QLabel *m_dragPreview = nullptr;
     QString m_dragId;
     QPixmap m_dragIcon;
-    QPoint m_pressGlobal;
-    bool m_dragging = false;
+    QPoint m_pressPosition;
 };
 }
 
@@ -151,7 +117,7 @@ GadgetGallery::GadgetGallery(GadgetManager *manager, QWidget *parent)
     navigation->addWidget(m_search);
     root->addLayout(navigation);
 
-    m_list = new GadgetList(manager, this);
+    m_list = new GadgetList(this);
     m_list->setViewMode(QListView::IconMode);
     m_list->setFlow(QListView::LeftToRight);
     m_list->setWrapping(true);

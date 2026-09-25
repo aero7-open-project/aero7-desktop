@@ -35,9 +35,21 @@ int main(int argc, char **argv)
     parser.addVersionOption();
     parser.addOption({QStringLiteral("gallery"), QStringLiteral("Open the Desktop Gadget Gallery")});
     parser.addOption({QStringLiteral("add"), QStringLiteral("Add a gadget by id"), QStringLiteral("id")});
+    parser.addOption({QStringLiteral("drop-id"), QStringLiteral("Add a gadget dropped on a desktop"), QStringLiteral("id")});
+    parser.addOption({QStringLiteral("drop-screen"), QStringLiteral("Output name receiving the drop"), QStringLiteral("screen")});
+    parser.addOption({QStringLiteral("drop-x"), QStringLiteral("Drop x coordinate within the output"), QStringLiteral("x")});
+    parser.addOption({QStringLiteral("drop-y"), QStringLiteral("Drop y coordinate within the output"), QStringLiteral("y")});
     parser.addOption({QStringLiteral("self-test"), QStringLiteral("Validate definitions and writable XDG paths, then exit")});
     parser.process(application);
     const bool galleryRequested = galleryAlias || parser.isSet(QStringLiteral("gallery"));
+    const bool screenDropRequested = parser.isSet(QStringLiteral("drop-id"));
+    bool validX = false;
+    bool validY = false;
+    const int dropX = parser.value(QStringLiteral("drop-x")).toInt(&validX);
+    const int dropY = parser.value(QStringLiteral("drop-y")).toInt(&validY);
+    if (screenDropRequested && (!parser.isSet(QStringLiteral("drop-screen")) || !validX || !validY)) {
+        return 64;
+    }
 
     if (parser.isSet(QStringLiteral("self-test"))) {
         const auto definitions = GadgetManager::builtinDefinitions();
@@ -93,7 +105,10 @@ int main(int argc, char **argv)
     if (!bus.registerService(QString::fromLatin1(serviceName))) {
         QDBusInterface existing(QString::fromLatin1(serviceName), QString::fromLatin1(objectPath),
                                 QStringLiteral("org.aero7.GadgetManager"), bus);
-        if (parser.isSet(QStringLiteral("add"))) {
+        if (screenDropRequested) {
+            existing.call(QStringLiteral("AddGadgetOnScreen"), parser.value(QStringLiteral("drop-id")),
+                          parser.value(QStringLiteral("drop-screen")), dropX, dropY);
+        } else if (parser.isSet(QStringLiteral("add"))) {
             existing.call(QStringLiteral("AddGadget"), parser.value(QStringLiteral("add")));
         } else if (galleryRequested) {
             existing.call(QStringLiteral("ShowGallery"));
@@ -105,7 +120,10 @@ int main(int argc, char **argv)
     bus.registerObject(QString::fromLatin1(objectPath), &manager,
                        QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals);
     manager.restoreSession();
-    if (parser.isSet(QStringLiteral("add"))) {
+    if (screenDropRequested) {
+        manager.AddGadgetOnScreen(parser.value(QStringLiteral("drop-id")),
+                                  parser.value(QStringLiteral("drop-screen")), dropX, dropY);
+    } else if (parser.isSet(QStringLiteral("add"))) {
         manager.AddGadget(parser.value(QStringLiteral("add")));
     }
     if (galleryRequested) {

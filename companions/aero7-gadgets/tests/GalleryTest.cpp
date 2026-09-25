@@ -1416,6 +1416,37 @@ private slots:
         QApplication::setPalette(m_originalPalette);
     }
 
+    void desktopDropKeepsTheReceivingOutput()
+    {
+        QScreen *screen = QGuiApplication::primaryScreen();
+        QVERIFY(screen);
+        const QRect geometry = screen->geometry();
+        const int x = geometry.width() / 3;
+        const int y = geometry.height() / 3;
+        QSignalSpy added(m_manager.get(), &GadgetManager::LayoutChanged);
+        const QString instance = m_manager->AddGadgetOnScreen(
+            QStringLiteral("org.aero7.gadgets.clock"), screen->name(), x, y);
+        QVERIFY(!instance.isEmpty());
+        QCOMPARE(added.count(), 1);
+
+        GadgetWindow *placed = nullptr;
+        for (QWidget *widget : QApplication::topLevelWidgets()) {
+            auto *window = qobject_cast<GadgetWindow *>(widget);
+            if (window && window->instanceId() == instance) placed = window;
+        }
+        QVERIFY(placed);
+        QCOMPARE(placed->stateForSave().monitor, screen->name());
+        QVERIFY(screen->availableGeometry().contains(placed->bodyGeometry()));
+        const QPoint actualCenter = placed->bodyGeometry().center();
+        const QPoint requestedCenter = geometry.topLeft() + QPoint(x, y);
+        QVERIFY((actualCenter - requestedCenter).manhattanLength() <= 2);
+
+        const QString invalid = m_manager->AddGadgetOnScreen(
+            QStringLiteral("org.aero7.gadgets.clock"), QStringLiteral("missing-output"), x, y);
+        QVERIFY(invalid.isEmpty());
+        QCOMPARE(added.count(), 1);
+    }
+
     void weatherRepliesStayWithTheirQuery_data()
     {
         QTest::addColumn<bool>("differentUnits");

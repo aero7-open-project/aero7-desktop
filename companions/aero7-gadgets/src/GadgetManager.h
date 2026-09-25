@@ -33,6 +33,7 @@ public:
 public slots:
     Q_SCRIPTABLE void ShowGallery();
     Q_SCRIPTABLE QString AddGadget(const QString &id);
+    Q_SCRIPTABLE QString AddGadgetOnScreen(const QString &id, const QString &screenName, int x, int y);
     Q_SCRIPTABLE void RemoveGadget(const QString &instance);
     Q_SCRIPTABLE void ResetLayout();
 

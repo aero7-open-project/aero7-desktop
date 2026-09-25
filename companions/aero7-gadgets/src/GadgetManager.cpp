@@ -274,6 +274,40 @@ QString GadgetManager::AddGadget(const QString &id)
     return addGadgetAt(id, {});
 }
 
+QString GadgetManager::AddGadgetOnScreen(const QString &id, const QString &screenName, int x, int y)
+{
+    const GadgetDefinition *item = definition(id);
+    if (!item) return {};
+
+    QScreen *dropScreen = nullptr;
+    for (QScreen *screen : QGuiApplication::screens()) {
+        if (screen->name() == screenName) {
+            dropScreen = screen;
+            break;
+        }
+    }
+    // An unavailable output must never silently redirect the gadget to the
+    // primary monitor. The desktop can retry after the output returns.
+    if (!dropScreen) return {};
+
+    GadgetState state = defaultState(*item, m_windows.size());
+    state.monitor = dropScreen->name();
+    const QRect bounds = dropScreen->availableGeometry();
+    const QPoint center = dropScreen->geometry().topLeft() + QPoint(x, y);
+    const QPoint topLeft = center - QPoint(item->smallSize.width() / 2, item->smallSize.height() / 2);
+    const int lastX = qMax(bounds.left(), bounds.right() - item->smallSize.width() + 1);
+    const int lastY = qMax(bounds.top(), bounds.bottom() - item->smallSize.height() + 1);
+    state.x = qBound(bounds.left(), topLeft.x(), lastX) - bounds.left();
+    state.y = qBound(bounds.top(), topLeft.y(), lastY) - bounds.top();
+
+    if (GadgetWindow *window = createWindow(state)) {
+        scheduleSave();
+        emit LayoutChanged();
+        return window->instanceId();
+    }
+    return {};
+}
+
 QString GadgetManager::addGadgetAt(const QString &id, const QPoint &globalPosition)
 {
     const auto *item = definition(id);
