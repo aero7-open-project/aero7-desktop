@@ -6,6 +6,7 @@
 #include "aero7tasksmodel.h"
 
 #include <QFile>
+#include <QGuiApplication>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -16,6 +17,39 @@ class Aero7TasksModelTest final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void draggedPinsAreSavedBeforeShellRestart()
+    {
+        QTemporaryDir temporary;
+        QVERIFY(temporary.isValid());
+        const QString statePath = temporary.filePath(QStringLiteral("taskbar-state.ini"));
+        qputenv("AERO7_TASKBAR_STATE_CONFIG", statePath.toUtf8());
+        qputenv("AERO7_IE_TASKBAR_CONFIG", temporary.filePath(QStringLiteral("browser.ini")).toUtf8());
+        qputenv("AERO7_IE_TASKBAR_POLICY", temporary.filePath(QStringLiteral("policy.ini")).toUtf8());
+        const QStringList original{QStringLiteral("applications:qterminal.desktop"),
+                                   QStringLiteral("applications:steam.desktop"),
+                                   QStringLiteral("applications:discord.desktop")};
+        const QStringList reordered{original.at(2), original.at(0), original.at(1)};
+        {
+            Aero7TasksModel model;
+            model.setSortMode(TaskManager::TasksModel::SortManual);
+            model.setSeparateLaunchers(true);
+            model.setLaunchInPlace(true);
+            model.setShellLauncherList(original);
+            QCoreApplication::processEvents();
+            if (QGuiApplication::platformName() == QLatin1String("offscreen") && model.rowCount() == 0) {
+                QSKIP("The offscreen platform does not expose taskbar rows; run this case in a graphical session");
+            }
+            QTRY_COMPARE(model.rowCount(), 3);
+            QVERIFY(model.move(2, 0));
+            QCOMPARE(model.shellLauncherList(), reordered);
+            QSettings saved(statePath, QSettings::IniFormat);
+            QCOMPARE(saved.value(QStringLiteral("Pinned/Launchers")).toStringList(), reordered);
+            QVERIFY(!model.move(0, 0));
+        }
+        Aero7TasksModel afterShellRestart;
+        QCOMPARE(afterShellRestart.shellLauncherList(), reordered);
+    }
+
     void pinnedLayoutSurvivesPanelAndShellRestart()
     {
         QTemporaryDir temporary;

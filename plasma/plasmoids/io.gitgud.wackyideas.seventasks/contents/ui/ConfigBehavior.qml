@@ -112,7 +112,7 @@ KCM.SimpleKCM {
         }
         CheckBox {
             id: separateLaunchers
-            visible: !iconsOnly//(Plasmoid.pluginName !== "org.kde.plasma.icontasks")
+            visible: false
             text: i18n("Keep launchers separate")
             enabled: sortingStrategy.currentIndex == 1
         }

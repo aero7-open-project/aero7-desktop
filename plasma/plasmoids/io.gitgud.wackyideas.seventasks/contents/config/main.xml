@@ -60,7 +60,7 @@
     </entry>
     <entry name="separateLaunchers" type="Bool">
       <label>Whether launcher tasks are sorted separately at the left side of the widget or can be mixed with other tasks.</label>
-      <default>false</default>
+      <default>true</default>
     </entry>
     <entry name="showMuteBtn" type="Bool">
       <label>Whether launcher tasks are sorted separately at the left side of the widget or can be mixed with other tasks.</label>
@@ -150,4 +150,3 @@
   </group>
 
 </kcfg>
-

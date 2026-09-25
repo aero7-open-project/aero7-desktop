@@ -51,7 +51,7 @@ DropArea {
         // by tracking the cursor movement vector and allowing the drag if
         // the movement direction has reversed, establishing user intent to
         // move back.
-        if (!Plasmoid.configuration.separateLaunchers && tasks.dragSource != null
+        if (!tasksModel.separateLaunchers && tasks.dragSource != null
                 && tasks.dragSource.model.IsLauncher && !above.model.IsLauncher
                 && above === ignoredItem) {
             return;

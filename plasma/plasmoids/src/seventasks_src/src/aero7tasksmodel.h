@@ -50,6 +50,8 @@ private:
     void saveTaskOrder();
     void restoreTaskOrder();
     QString taskKeyAt(int row) const;
+    bool isPinnedTaskAt(int row) const;
+    int pinnedTaskCount() const;
     static QString configPath();
     static QString policyPath();
     static bool isSafeDesktopId(const QString &desktopId);

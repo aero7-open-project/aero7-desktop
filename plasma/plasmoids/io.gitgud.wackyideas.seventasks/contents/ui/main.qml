@@ -282,7 +282,7 @@ PlasmoidItem {
     property var tasksModel: Plasmoid.aeroTasksModel
 
     readonly property int logicalLauncherCount: {
-        if (Plasmoid.configuration.separateLaunchers) {
+        if (tasksModel.separateLaunchers) {
             return tasksModel.launcherCount;
         }
         var startupsWithLaunchers = 0;
@@ -317,8 +317,10 @@ PlasmoidItem {
     Binding { target: tasksModel; property: "filterNotMinimized"; value: Plasmoid.configuration.showOnlyMinimized }
     Binding { target: tasksModel; property: "hideActivatedLaunchers"; value: true }
     Binding { target: tasksModel; property: "sortMode"; value: TaskManager.TasksModel.SortManual }
-    Binding { target: tasksModel; property: "launchInPlace"; value: tasks.iconsOnly && Plasmoid.configuration.sortingStrategy === 1 }
-    Binding { target: tasksModel; property: "separateLaunchers"; value: false }
+    // Windows 7 keeps pins together; opening a pinned app replaces its pin,
+    // while unpinned windows appear after the pinned region.
+    Binding { target: tasksModel; property: "launchInPlace"; value: true }
+    Binding { target: tasksModel; property: "separateLaunchers"; value: true }
     Binding { target: tasksModel; property: "groupMode"; value: Plasmoid.configuration.groupPopups ? TaskManager.TasksModel.GroupApplications : TaskManager.TasksModel.GroupDisabled }
     Binding { target: tasksModel; property: "groupInline"; value: !Plasmoid.configuration.groupPopups && !tasks.iconsOnly }
     Binding {

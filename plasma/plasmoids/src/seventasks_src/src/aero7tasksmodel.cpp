@@ -113,10 +113,31 @@ QString Aero7TasksModel::taskKeyAt(int row) const
     return appId.isEmpty() ? QString() : QStringLiteral("app:") + appId;
 }
 
+bool Aero7TasksModel::isPinnedTaskAt(int row) const
+{
+    const QModelIndex task = index(row, 0);
+    if (!task.isValid()) {
+        return false;
+    }
+    const QUrl launcher = data(task, TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon).toUrl();
+    return !launcher.isEmpty() && launcherPosition(launcher) >= 0;
+}
+
+int Aero7TasksModel::pinnedTaskCount() const
+{
+    int count = 0;
+    while (count < rowCount() && isPinnedTaskAt(count)) {
+        ++count;
+    }
+    return count;
+}
+
 void Aero7TasksModel::saveTaskOrder()
 {
     QStringList order;
-    for (int row = 0; row < rowCount(); ++row) {
+    // The launcher list is the single source of truth for pinned buttons.
+    // Only remember the relative order of unpinned running applications.
+    for (int row = pinnedTaskCount(); row < rowCount(); ++row) {
         const QString key = taskKeyAt(row);
         if (!key.isEmpty() && !order.contains(key)) {
             order.append(key);
@@ -134,6 +155,11 @@ bool Aero7TasksModel::move(int row, int newPos, const QModelIndex &parent)
 {
     const bool moved = TaskManager::TasksModel::move(row, newPos, parent);
     if (moved && !m_restoringTaskOrder) {
+        // KDE defers saving moved launchers until syncLaunchers().  Commit it
+        // before persisting window order so a crash cannot restore two
+        // conflicting arrangements.  The QML drag-end sync remains harmless.
+        m_orderRestoreTimer.stop();
+        TaskManager::TasksModel::syncLaunchers();
         saveTaskOrder();
     }
     return moved;
@@ -145,10 +171,10 @@ void Aero7TasksModel::restoreTaskOrder()
         return;
     }
     m_restoringTaskOrder = true;
-    int destination = 0;
+    int destination = pinnedTaskCount();
     for (const QString &wanted : std::as_const(m_taskOrder)) {
         for (int row = destination; row < rowCount(); ++row) {
-            if (taskKeyAt(row) != wanted) {
+            if (isPinnedTaskAt(row) || taskKeyAt(row) != wanted) {
                 continue;
             }
             if (row == destination || TaskManager::TasksModel::move(row, destination)) {
@@ -157,7 +183,6 @@ void Aero7TasksModel::restoreTaskOrder()
             break;
         }
     }
-    TaskManager::TasksModel::syncLaunchers();
     m_restoringTaskOrder = false;
 }
 

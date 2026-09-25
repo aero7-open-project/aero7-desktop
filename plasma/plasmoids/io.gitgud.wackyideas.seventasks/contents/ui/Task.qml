@@ -292,7 +292,7 @@ PlasmaCore.ToolTipArea {
 
     onIndexChanged: {
         if (!tasksRoot.vertical
-                && !Plasmoid.configuration.separateLaunchers) {
+                && !tasksModel.separateLaunchers) {
             tasksRoot.requestLayout();
         }
     }
