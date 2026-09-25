@@ -6,6 +6,7 @@
 #include "aero7tasksmodel.h"
 
 #include <QFile>
+#include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -15,6 +16,36 @@ class Aero7TasksModelTest final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void pinnedLayoutSurvivesPanelAndShellRestart()
+    {
+        QTemporaryDir temporary;
+        QVERIFY(temporary.isValid());
+        const QString statePath = temporary.filePath(QStringLiteral("taskbar-state.ini"));
+        qputenv("AERO7_TASKBAR_STATE_CONFIG", statePath.toUtf8());
+        qputenv("AERO7_IE_TASKBAR_CONFIG", temporary.filePath(QStringLiteral("browser.ini")).toUtf8());
+        qputenv("AERO7_IE_TASKBAR_POLICY", temporary.filePath(QStringLiteral("policy.ini")).toUtf8());
+        const QStringList pinned{QStringLiteral("applications:qterminal.desktop"),
+                                 QStringLiteral("applications:org.aero7.FileExplorer.desktop")};
+        {
+            Aero7TasksModel firstPanel;
+            firstPanel.restoreOrAdoptLaunchers(pinned);
+            QCOMPARE(firstPanel.shellLauncherList(), pinned);
+            Aero7TasksModel staleSecondPanel;
+            staleSecondPanel.restoreOrAdoptLaunchers({QStringLiteral("applications:old.desktop")});
+            QCOMPARE(staleSecondPanel.shellLauncherList(), pinned);
+            firstPanel.setShellLauncherList({pinned.at(1), pinned.at(0)});
+        }
+        Aero7TasksModel afterShellRestart;
+        afterShellRestart.restoreOrAdoptLaunchers({QStringLiteral("applications:old.desktop")});
+        QCOMPARE(afterShellRestart.shellLauncherList(), (QStringList{pinned.at(1), pinned.at(0)}));
+        afterShellRestart.setShellLauncherList({});
+        QSettings saved(statePath, QSettings::IniFormat);
+        QVERIFY(saved.contains(QStringLiteral("Pinned/Launchers")));
+        Aero7TasksModel emptyAfterRestart;
+        emptyAfterRestart.restoreOrAdoptLaunchers(pinned);
+        QVERIFY(emptyAfterRestart.shellLauncherList().isEmpty());
+    }
+
     void canonicalLauncherIsStableAcrossBackends()
     {
         QTemporaryDir temporary;
@@ -23,6 +54,7 @@ private Q_SLOTS:
         const QString policy = temporary.filePath(QStringLiteral("policy.conf"));
         qputenv("AERO7_IE_TASKBAR_CONFIG", config.toUtf8());
         qputenv("AERO7_IE_TASKBAR_POLICY", policy.toUtf8());
+        qputenv("AERO7_TASKBAR_STATE_CONFIG", temporary.filePath(QStringLiteral("taskbar-state.ini")).toUtf8());
 
         QFile file(config);
         QVERIFY(file.open(QIODevice::WriteOnly));

@@ -307,14 +307,16 @@ PlasmoidItem {
     }
 
     Binding { target: tasksModel; property: "virtualDesktop"; value: virtualDesktopInfo.currentDesktop }
-    Binding { target: tasksModel; property: "screenGeometry"; value: Plasmoid.containment.screenGeometry }
+    // Every panel presents the same shared model, so no output may give it a
+    // different screen filter or geometry.
+    Binding { target: tasksModel; property: "screenGeometry"; value: Qt.rect(0, 0, 0, 0) }
     Binding { target: tasksModel; property: "activity"; value: activityInfo.currentActivity }
     Binding { target: tasksModel; property: "filterByVirtualDesktop"; value: Plasmoid.configuration.showOnlyCurrentDesktop }
-    Binding { target: tasksModel; property: "filterByScreen"; value: Plasmoid.configuration.showOnlyCurrentScreen }
+    Binding { target: tasksModel; property: "filterByScreen"; value: false }
     Binding { target: tasksModel; property: "filterByActivity"; value: Plasmoid.configuration.showOnlyCurrentActivity }
     Binding { target: tasksModel; property: "filterNotMinimized"; value: Plasmoid.configuration.showOnlyMinimized }
     Binding { target: tasksModel; property: "hideActivatedLaunchers"; value: true }
-    Binding { target: tasksModel; property: "sortMode"; value: tasks.sortModeEnumValue(Plasmoid.configuration.sortingStrategy) }
+    Binding { target: tasksModel; property: "sortMode"; value: TaskManager.TasksModel.SortManual }
     Binding { target: tasksModel; property: "launchInPlace"; value: tasks.iconsOnly && Plasmoid.configuration.sortingStrategy === 1 }
     Binding { target: tasksModel; property: "separateLaunchers"; value: false }
     Binding { target: tasksModel; property: "groupMode"; value: Plasmoid.configuration.groupPopups ? TaskManager.TasksModel.GroupApplications : TaskManager.TasksModel.GroupDisabled }
@@ -322,8 +324,7 @@ PlasmoidItem {
     Binding {
         target: tasksModel
         property: "groupingWindowTasksThreshold"
-        value: Plasmoid.configuration.onlyGroupWhenFull && !tasks.iconsOnly
-            ? LayoutMetrics.optimumCapacity(width, height) + 1 : -1
+        value: -1
     }
 
     Connections {
@@ -432,10 +433,6 @@ PlasmoidItem {
 
         Connections {
             target: Plasmoid.configuration
-
-            function onLaunchersChanged() {
-                tasksModel.shellLauncherList = Plasmoid.configuration.launchers
-            }
             function onGroupingAppIdBlacklistChanged() {
                 tasksModel.groupingAppIdBlacklist = Plasmoid.configuration.groupingAppIdBlacklist;
             }
@@ -590,7 +587,8 @@ PlasmoidItem {
 
     Component.onCompleted: {
         TaskTools.taskManagerInstanceCount += 1;
-        tasksModel.shellLauncherList = Plasmoid.configuration.launchers;
+        tasksModel.restoreOrAdoptLaunchers(Plasmoid.configuration.launchers);
+        Plasmoid.configuration.launchers = tasksModel.shellLauncherList;
         tasksModel.groupingAppIdBlacklist = Plasmoid.configuration.groupingAppIdBlacklist;
         tasksModel.groupingLauncherUrlBlacklist = Plasmoid.configuration.groupingLauncherUrlBlacklist;
         tasks.requestLayout.connect(iconGeometryTimer.restart);

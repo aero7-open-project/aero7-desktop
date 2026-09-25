@@ -15,6 +15,7 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
+#include <utility>
 
 namespace {
 constexpr auto InternetExplorerDesktopId = "aero7-internet-explorer.desktop";
@@ -38,9 +39,24 @@ Aero7TasksModel::Aero7TasksModel(QObject *parent)
         }
         if (canonical != m_shellLaunchers) {
             m_shellLaunchers = canonical;
+            saveShellLaunchers();
             Q_EMIT shellLauncherListChanged();
         }
     });
+    QSettings savedState(taskbarStatePath(), QSettings::IniFormat);
+    m_hasSavedLaunchers = savedState.contains(QStringLiteral("Pinned/Launchers"));
+    if (m_hasSavedLaunchers) {
+        m_shellLaunchers = savedState.value(QStringLiteral("Pinned/Launchers")).toStringList();
+        applyShellLaunchers();
+    }
+    m_taskOrder = savedState.value(QStringLiteral("Layout/TaskOrder")).toStringList();
+    m_orderRestoreTimer.setSingleShot(true);
+    m_orderRestoreTimer.setInterval(250);
+    connect(&m_orderRestoreTimer, &QTimer::timeout, this, &Aero7TasksModel::restoreTaskOrder);
+    connect(this, &QAbstractItemModel::rowsInserted, this,
+            [this] { if (!m_restoringTaskOrder && !m_taskOrder.isEmpty()) m_orderRestoreTimer.start(); });
+    connect(this, &QAbstractItemModel::modelReset, this,
+            [this] { if (!m_taskOrder.isEmpty()) m_orderRestoreTimer.start(); });
     connect(&m_watcher, &QFileSystemWatcher::fileChanged, this, [this] {
         refreshWatchPaths();
         refreshBackend();
@@ -61,6 +77,88 @@ QString Aero7TasksModel::configPath()
     }
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
         + QStringLiteral("/aero7/internet-explorer.conf");
+}
+
+QString Aero7TasksModel::taskbarStatePath()
+{
+    const QString testPath = qEnvironmentVariable("AERO7_TASKBAR_STATE_CONFIG");
+    if (!testPath.isEmpty()) {
+        return testPath;
+    }
+    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
+        + QStringLiteral("/aero7/taskbar-state.ini");
+}
+
+void Aero7TasksModel::saveShellLaunchers()
+{
+    const QString path = taskbarStatePath();
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QSettings state(path, QSettings::IniFormat);
+    state.setValue(QStringLiteral("Pinned/Launchers"), m_shellLaunchers);
+    state.sync();
+    m_hasSavedLaunchers = state.status() == QSettings::NoError;
+}
+
+QString Aero7TasksModel::taskKeyAt(int row) const
+{
+    const QModelIndex task = index(row, 0);
+    if (!task.isValid()) {
+        return {};
+    }
+    const QUrl launcher = data(task, TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon).toUrl();
+    if (launcher.isValid() && !launcher.isEmpty()) {
+        return QStringLiteral("launcher:") + launcher.toString(QUrl::RemoveQuery);
+    }
+    const QString appId = data(task, TaskManager::AbstractTasksModel::AppId).toString();
+    return appId.isEmpty() ? QString() : QStringLiteral("app:") + appId;
+}
+
+void Aero7TasksModel::saveTaskOrder()
+{
+    QStringList order;
+    for (int row = 0; row < rowCount(); ++row) {
+        const QString key = taskKeyAt(row);
+        if (!key.isEmpty() && !order.contains(key)) {
+            order.append(key);
+        }
+    }
+    m_taskOrder = order;
+    const QString path = taskbarStatePath();
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QSettings state(path, QSettings::IniFormat);
+    state.setValue(QStringLiteral("Layout/TaskOrder"), m_taskOrder);
+    state.sync();
+}
+
+bool Aero7TasksModel::move(int row, int newPos, const QModelIndex &parent)
+{
+    const bool moved = TaskManager::TasksModel::move(row, newPos, parent);
+    if (moved && !m_restoringTaskOrder) {
+        saveTaskOrder();
+    }
+    return moved;
+}
+
+void Aero7TasksModel::restoreTaskOrder()
+{
+    if (m_taskOrder.isEmpty() || sortMode() != TaskManager::TasksModel::SortManual) {
+        return;
+    }
+    m_restoringTaskOrder = true;
+    int destination = 0;
+    for (const QString &wanted : std::as_const(m_taskOrder)) {
+        for (int row = destination; row < rowCount(); ++row) {
+            if (taskKeyAt(row) != wanted) {
+                continue;
+            }
+            if (row == destination || TaskManager::TasksModel::move(row, destination)) {
+                ++destination;
+            }
+            break;
+        }
+    }
+    TaskManager::TasksModel::syncLaunchers();
+    m_restoringTaskOrder = false;
 }
 
 QString Aero7TasksModel::policyPath()
@@ -103,11 +201,26 @@ QStringList Aero7TasksModel::shellLauncherList() const
 void Aero7TasksModel::setShellLauncherList(const QStringList &launchers)
 {
     if (m_shellLaunchers == launchers) {
+        if (!m_hasSavedLaunchers) {
+            saveShellLaunchers();
+        }
         return;
     }
     m_shellLaunchers = launchers;
     applyShellLaunchers();
+    saveShellLaunchers();
     Q_EMIT shellLauncherListChanged();
+}
+
+void Aero7TasksModel::restoreOrAdoptLaunchers(const QStringList &panelLaunchers)
+{
+    if (m_hasSavedLaunchers) {
+        // A secondary panel may still have a stale per-applet copy. The
+        // shared, crash-safe list wins and is copied back by the QML caller.
+        Q_EMIT shellLauncherListChanged();
+        return;
+    }
+    setShellLauncherList(panelLaunchers);
 }
 
 QString Aero7TasksModel::internetExplorerBackend() const

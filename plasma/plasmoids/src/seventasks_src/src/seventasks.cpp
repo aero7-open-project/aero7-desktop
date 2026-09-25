@@ -8,11 +8,22 @@
 #include <kwindowsystem.h>
 #include <kwindowinfo.h>
 #include <kx11extras.h>
+#include <QQmlEngine>
+
+namespace {
+QWeakPointer<Aero7TasksModel> sharedTasksModel;
+}
 
 SevenTasks::SevenTasks(QObject *parentObject, const KPluginMetaData &data, const QVariantList &args)
     : Plasma::Applet(parentObject, data, args)
-    , m_aeroTasksModel(new Aero7TasksModel(this))
 {
+    m_sharedTasksModel = sharedTasksModel.toStrongRef();
+    if (m_sharedTasksModel.isNull()) {
+        m_sharedTasksModel = QSharedPointer<Aero7TasksModel>::create();
+        sharedTasksModel = m_sharedTasksModel.toWeakRef();
+    }
+    m_aeroTasksModel = m_sharedTasksModel.data();
+    QQmlEngine::setObjectOwnership(m_aeroTasksModel, QQmlEngine::CppOwnership);
 }
 
 SevenTasks::~SevenTasks()

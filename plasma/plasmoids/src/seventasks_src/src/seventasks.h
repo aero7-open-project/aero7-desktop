@@ -21,6 +21,7 @@
 #include <QCursor>
 #include <QKeySequence>
 #include <QVariantList>
+#include <QSharedPointer>
 #include <kwindowsystem.h>
 #include <kx11extras.h>
 #include <kwindoweffects.h>
@@ -128,6 +129,7 @@ Q_SIGNALS:
 
 private:
     Aero7TasksModel *m_aeroTasksModel = nullptr;
+    QSharedPointer<Aero7TasksModel> m_sharedTasksModel;
 };
 
 #endif

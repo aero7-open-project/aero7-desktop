@@ -7,6 +7,7 @@
 
 #include <QFileSystemWatcher>
 #include <QStringList>
+#include <QTimer>
 #include <QUrl>
 #include <taskmanager/abstracttasksmodel.h>
 #include <taskmanager/tasksmodel.h>
@@ -22,6 +23,7 @@ public:
 
     QStringList shellLauncherList() const;
     void setShellLauncherList(const QStringList &launchers);
+    Q_INVOKABLE void restoreOrAdoptLaunchers(const QStringList &panelLaunchers);
     QString internetExplorerBackend() const;
 
     QVariant data(const QModelIndex &index, int role) const override;
@@ -32,6 +34,7 @@ public:
     Q_INVOKABLE bool requestRemoveLauncherFromActivity(const QUrl &url, const QString &activity);
     Q_INVOKABLE QStringList launcherActivities(const QUrl &url);
     Q_INVOKABLE int launcherPosition(const QUrl &url) const;
+    Q_INVOKABLE bool move(int row, int newPos, const QModelIndex &parent = QModelIndex());
 
     Q_INVOKABLE void requestActivate(const QModelIndex &index) override;
     Q_INVOKABLE void requestNewInstance(const QModelIndex &index) override;
@@ -42,6 +45,11 @@ Q_SIGNALS:
     void internetExplorerBackendChanged();
 
 private:
+    static QString taskbarStatePath();
+    void saveShellLaunchers();
+    void saveTaskOrder();
+    void restoreTaskOrder();
+    QString taskKeyAt(int row) const;
     static QString configPath();
     static QString policyPath();
     static bool isSafeDesktopId(const QString &desktopId);
@@ -60,6 +68,10 @@ private:
 
     QFileSystemWatcher m_watcher;
     QStringList m_shellLaunchers;
+    QStringList m_taskOrder;
+    bool m_hasSavedLaunchers = false;
+    bool m_restoringTaskOrder = false;
+    QTimer m_orderRestoreTimer;
     QString m_backendDesktopId;
     bool m_applyingLaunchers = false;
 };
