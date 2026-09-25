@@ -21,6 +21,10 @@ import "items"
 ContainmentItem {
     id: root
 
+    // The panel paints the Aero glass surface for the whole taskbar. An applet
+    // background here draws a separate opaque patch over the notification area.
+    Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
 
     Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : mainLayout.implicitWidth + Kirigami.Units.largeSpacing+1
