@@ -33,6 +33,7 @@
 
 #include <KAcceleratorManager>
 #include <KActionCollection>
+#include <KConfigLoader>
 #include <KSharedConfig>
 #include <KWaylandExtras>
 #include <KWindowSystem>
@@ -86,6 +87,7 @@ void SystemTray::initSettingsAndRegistry()
     if (!m_settings) {
         m_settings = new SystemTraySettings(configScheme(), this);
         connect(m_settings, &SystemTraySettings::enabledPluginsChanged, this, &SystemTray::onEnabledAppletsChanged);
+        connect(m_settings, &SystemTraySettings::configurationChanged, this, &SystemTray::traySettingsChanged);
     }
 
     if (!m_plasmoidRegistry) {
@@ -93,6 +95,11 @@ void SystemTray::initSettingsAndRegistry()
         connect(m_plasmoidRegistry, &PlasmoidRegistry::plasmoidEnabled, this, &SystemTray::startApplet);
         connect(m_plasmoidRegistry, &PlasmoidRegistry::plasmoidStopped, this, &SystemTray::stopApplet);
     }
+}
+
+QString SystemTray::trayItemOrdering() const
+{
+    return configScheme() ? configScheme()->property(QStringLiteral("itemOrdering")).toString() : QString();
 }
 
 void SystemTray::migrateFromSystrayContainer()

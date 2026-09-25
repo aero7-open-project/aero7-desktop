@@ -6,6 +6,7 @@
 
 #include <QAbstractItemModelTester>
 #include <QPointer>
+#include <QTemporaryDir>
 #include <QTest>
 
 #include <Plasma/Applet>
@@ -28,6 +29,7 @@ class SystemTrayModelTest : public QObject
 private Q_SLOTS:
     void init();
     void testPlasmoidModel();
+    void testTraySettingsFollowChangesFromEitherPanel();
 };
 
 void SystemTrayModelTest::init()
@@ -127,6 +129,40 @@ void SystemTrayModelTest::testPlasmoidModel()
     QVERIFY(!model->data(idx, static_cast<int>(BaseModel::BaseRole::ItemType)).isValid());
 
     delete model;
+    delete plasmoidRegistry;
+    delete settings;
+}
+
+void SystemTrayModelTest::testTraySettingsFollowChangesFromEitherPanel()
+{
+    QTemporaryDir configDir;
+    QVERIFY(configDir.isValid());
+    const QString schemaFileName = QFINDTESTDATA("../package/contents/config/main.xml");
+    QFile firstSchema(schemaFileName);
+    QFile secondSchema(schemaFileName);
+    KConfigLoader firstLoader(configDir.filePath(u"primaryrc"_s), &firstSchema);
+    KConfigLoader secondLoader(configDir.filePath(u"secondaryrc"_s), &secondSchema);
+
+    SystemTraySettings first(&firstLoader);
+    first.addEnabledPlugin(u"io.gitgud.wackyideas.volume"_s);
+    SystemTraySettings second(&secondLoader);
+    QCOMPARE(second.enabledPlugins(), first.enabledPlugins());
+
+    second.addEnabledPlugin(u"io.gitgud.wackyideas.networkmanagement"_s);
+    QCOMPARE(first.enabledPlugins(), second.enabledPlugins());
+    QVERIFY(first.enabledPlugins().contains(u"io.gitgud.wackyideas.networkmanagement"_s));
+
+    const QStringList hidden = {u"org.kde.plasma.mediacontroller"_s};
+    secondLoader.findItemByName(u"hiddenItems"_s)->setProperty(hidden);
+    secondLoader.save();
+    secondLoader.read();
+    Q_EMIT secondLoader.configChanged();
+    QCOMPARE(first.hiddenItems(), hidden);
+    QCOMPARE(firstLoader.property(u"hiddenItems"_s).toStringList(), hidden);
+
+    first.removeEnabledPlugin(u"io.gitgud.wackyideas.volume"_s);
+    QCOMPARE(second.enabledPlugins(), first.enabledPlugins());
+    QVERIFY(!second.enabledPlugins().contains(u"io.gitgud.wackyideas.volume"_s));
 }
 
 QTEST_MAIN(SystemTrayModelTest)

@@ -20,6 +20,7 @@ class SystemTraySettings : public QObject
     Q_OBJECT
 public:
     explicit SystemTraySettings(KConfigLoader *config, QObject *parent = nullptr);
+    ~SystemTraySettings() override;
 
     bool isKnownPlugin(const QString &pluginId);
     const QStringList knownPlugins() const;
@@ -46,11 +47,14 @@ Q_SIGNALS:
 private:
     void loadConfig();
     void writeConfigValue(const QString &key, const QVariant &value);
+    void copyVisibleSettingsFrom(const SystemTraySettings *source);
+    void synchronizePeers();
     void notifyAboutChangedEnabledPlugins(const QStringList &enabledPluginsOld, const QStringList &enabledPluginsNew);
 
     QPointer<KConfigLoader> config;
 
     bool updatingConfigValue = false;
+    bool synchronizingPeers = false;
     QStringList m_extraItems;
     QStringList m_knownItems;
     QStringList m_disabledStatusNotifiers;

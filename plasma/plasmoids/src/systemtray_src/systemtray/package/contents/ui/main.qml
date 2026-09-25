@@ -113,6 +113,16 @@ ContainmentItem {
             id: orderingManager
             property var orderObject: {}
 
+            function loadConfiguration() {
+                const saved = Plasmoid.trayItemOrdering();
+                try {
+                    orderObject = saved ? JSON.parse(saved) : {};
+                } catch (error) {
+                    orderObject = {};
+                }
+                activeModel.restoreSavedOrder();
+            }
+
             function saveConfiguration() {
                 for(var i = 0; i < activeModel.items.count; i++) {
                     var item = activeModel.items.get(i);
@@ -136,17 +146,16 @@ ContainmentItem {
                 Plasmoid.configuration.writeConfig();
             }
 
-            Component.onCompleted: {
-                var list = Plasmoid.configuration.itemOrdering;
-                if(list !== "")
-                    orderObject = JSON.parse(list);
-
-                if(typeof orderObject === "undefined")
-                    orderObject = {};
-            }
+            Component.onCompleted: loadConfiguration()
             /*Component.onDestruction: {
                 saveConfiguration();
             }*/
+        }
+        Connections {
+            target: Plasmoid
+            function onTraySettingsChanged() {
+                orderingManager.loadConfiguration();
+            }
         }
         Timer {
             id: updateTimer
@@ -200,6 +209,23 @@ ContainmentItem {
                     var i = determinePosition(item); //orderingManager.getItemOrder(item.model.itemId);
                     item.groups =  "items";
                     items.move(item.itemsIndex, i);
+                }
+            }
+            function restoreSavedOrder() {
+                for (let target = 0; target < items.count; ++target) {
+                    let best = target;
+                    let bestOrder = Number.MAX_SAFE_INTEGER;
+                    for (let candidate = target; candidate < items.count; ++candidate) {
+                        const savedOrder = orderingManager.getItemOrder(items.get(candidate).model.itemId);
+                        const rank = savedOrder < 0 ? Number.MAX_SAFE_INTEGER : savedOrder;
+                        if (rank < bestOrder) {
+                            best = candidate;
+                            bestOrder = rank;
+                        }
+                    }
+                    if (best !== target) {
+                        items.move(best, target);
+                    }
                 }
             }
             items.includeByDefault: false

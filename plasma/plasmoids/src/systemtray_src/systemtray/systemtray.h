@@ -78,6 +78,11 @@ public:
 
     Q_INVOKABLE void scroll(const QString &service, int delta, const QString &direction);
 
+    Q_INVOKABLE QString trayItemOrdering() const;
+
+Q_SIGNALS:
+    void traySettingsChanged();
+
 private Q_SLOTS:
     // synchronizes with configuration and deletes not allowed applets
     void onEnabledAppletsChanged();

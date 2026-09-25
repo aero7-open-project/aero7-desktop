@@ -7,6 +7,29 @@
 #include "systemtraysettings.h"
 
 #include <KConfigLoader>
+#include <QList>
+
+namespace
+{
+QList<SystemTraySettings *> &liveTrays()
+{
+    static QList<SystemTraySettings *> trays;
+    return trays;
+}
+
+const QStringList &sharedKeys()
+{
+    static const QStringList keys = {
+        QStringLiteral("extraItems"),
+        QStringLiteral("shownItems"),
+        QStringLiteral("hiddenItems"),
+        QStringLiteral("disabledStatusNotifiers"),
+        QStringLiteral("showAllItems"),
+        QStringLiteral("itemOrdering"),
+    };
+    return keys;
+}
+}
 
 static const QString KNOWN_ITEMS_KEY = QStringLiteral("knownItems");
 static const QString EXTRA_ITEMS_KEY = QStringLiteral("extraItems");
@@ -26,6 +49,15 @@ SystemTraySettings::SystemTraySettings(KConfigLoader *config, QObject *parent)
     });
 
     loadConfig();
+    if (!liveTrays().isEmpty()) {
+        copyVisibleSettingsFrom(liveTrays().first());
+    }
+    liveTrays().append(this);
+}
+
+SystemTraySettings::~SystemTraySettings()
+{
+    liveTrays().removeAll(this);
 }
 
 bool SystemTraySettings::isKnownPlugin(const QString &pluginId)
@@ -126,6 +158,9 @@ void SystemTraySettings::loadConfig()
     m_disabledStatusNotifiers = config->property(DISABLED_SNIS_KEY).toStringList();
 
     Q_EMIT configurationChanged();
+    if (!synchronizingPeers && liveTrays().contains(this)) {
+        synchronizePeers();
+    }
 }
 
 void SystemTraySettings::writeConfigValue(const QString &key, const QVariant &value)
@@ -146,6 +181,43 @@ void SystemTraySettings::writeConfigValue(const QString &key, const QVariant &va
     }
 
     Q_EMIT configurationChanged();
+    if (!synchronizingPeers && liveTrays().contains(this)) {
+        synchronizePeers();
+    }
+}
+
+void SystemTraySettings::copyVisibleSettingsFrom(const SystemTraySettings *source)
+{
+    if (!config || !source || !source->config) {
+        return;
+    }
+
+    bool changed = false;
+    synchronizingPeers = true;
+    for (const QString &key : sharedKeys()) {
+        const QVariant value = source->config->property(key);
+        KConfigSkeletonItem *item = config->findItemByName(key);
+        if (item && config->property(key) != value) {
+            item->setWriteFlags(KConfigBase::Notify);
+            item->setProperty(value);
+            changed = true;
+        }
+    }
+    if (changed) {
+        config->save();
+        config->read();
+        loadConfig();
+    }
+    synchronizingPeers = false;
+}
+
+void SystemTraySettings::synchronizePeers()
+{
+    for (SystemTraySettings *tray : liveTrays()) {
+        if (tray != this) {
+            tray->copyVisibleSettingsFrom(this);
+        }
+    }
 }
 
 void SystemTraySettings::notifyAboutChangedEnabledPlugins(const QStringList &enabledPluginsOld, const QStringList &enabledPluginsNew)
