@@ -68,8 +68,7 @@ PlasmoidItem {
         "Qt Widgets Designer"
     ]
     readonly property var fullyHiddenApplicationNames: [
-        "Emoji Selector",
-        "System Settings"
+        "Emoji Selector"
     ]
 
     function normalizedApplicationName(value) {
