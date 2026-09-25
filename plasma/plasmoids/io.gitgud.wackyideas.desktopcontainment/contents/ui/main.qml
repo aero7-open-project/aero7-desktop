@@ -8,6 +8,7 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Window 2.15
 
 import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core as PlasmaCore
@@ -222,6 +223,10 @@ ContainmentItem {
         preventStealing: true
 
         onDragEnter: event => {
+            if (isContainment && event.mimeData.formats.indexOf("application/x-aero7-gadget") !== -1) {
+                event.accept(event.proposedAction);
+                return;
+            }
             if (isContainment && Plasmoid.immutable && !(isFolder && FolderTools.isFileDrag(event))) {
                 event.ignore();
             }
@@ -239,6 +244,10 @@ ContainmentItem {
         }
 
         onDragMove: event => {
+            if (isContainment && event.mimeData.formats.indexOf("application/x-aero7-gadget") !== -1) {
+                event.accept(event.proposedAction);
+                return;
+            }
             // TODO: We should reject drag moves onto file items that don't accept drops
             // (cf. QAbstractItemModel::flags() here, but DeclarativeDropArea currently
             // is currently incapable of rejecting drag events.
@@ -268,6 +277,17 @@ ContainmentItem {
         }
 
         onDrop: event => {
+            if (isContainment && event.mimeData.formats.indexOf("application/x-aero7-gadget") !== -1) {
+                const gadgetId = event.mimeData.getDataAsByteArray("application/x-aero7-gadget");
+                const point = dropArea.mapToItem(root, event.x, event.y);
+                if (Folder.GadgetDrop.add(gadgetId, dropArea.Screen.name,
+                                          Math.round(point.x), Math.round(point.y))) {
+                    event.accept(event.proposedAction);
+                } else {
+                    event.ignore();
+                }
+                return;
+            }
             if (isFolder && FolderTools.isFileDrag(event)) {
                 handleDragEnd(folderViewLayer.view);
                 folderViewLayer.view.drop(root, event, mapToItem(folderViewLayer.view, event.x, event.y));

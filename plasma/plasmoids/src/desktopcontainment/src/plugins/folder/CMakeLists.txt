@@ -24,6 +24,8 @@ target_sources(folderplugin PRIVATE
     screenmapper.cpp
     removeaction.cpp
     eventgenerator.cpp
+    gadgetdrop.cpp
+    gadgetdrop.h
     types.h
 )
 
