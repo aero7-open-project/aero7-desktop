@@ -126,6 +126,8 @@ ensure_window_management_defaults() {
     ensure_kwin_default Plugins smodpeekscriptEnabled true
     ensure_kwin_default Plugins aero7shakeEnabled true
     ensure_kwin_default Plugins aero7snapEnabled true
+    ensure_kwin_default Windows ElectricBorderTiling false
+    ensure_kwin_default Windows ElectricBorderMaximize false
     qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
 }
 

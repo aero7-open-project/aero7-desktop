@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Manage the per-user Aero7 edge snapping feature."""
+
+import os
+import shutil
+import subprocess
+import sys
+
+
+def kwinrc():
+    return os.environ.get("AERO7_SNAP_KWINRC", "kwinrc")
+
+
+def read(group, key, default):
+    result = subprocess.run(
+        ["kreadconfig6", "--file", kwinrc(), "--group", group, "--key", key],
+        capture_output=True, text=True, check=True,
+    )
+    return result.stdout.strip() or default
+
+
+def write(group, key, value):
+    subprocess.run(
+        ["kwriteconfig6", "--file", kwinrc(), "--group", group,
+         "--key", key, str(value)], check=True,
+    )
+
+
+def refresh(enabled):
+    if os.environ.get("AERO7_SNAP_NO_RECONFIGURE") == "1":
+        return
+    if not shutil.which("qdbus6"):
+        return
+    base = ["qdbus6", "org.kde.KWin"]
+    subprocess.run(base + ["/KWin", "org.kde.KWin.reconfigure"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    scripting = base + ["/Scripting", "org.kde.kwin.Scripting."]
+    subprocess.run(scripting[:-1] + [scripting[-1] + "unloadScript", "aero7snap"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    if enabled:
+        script = "/usr/share/kwin/scripts/aero7snap/contents/code/main.js"
+        if os.path.isfile(script):
+            subprocess.run(scripting[:-1] + [scripting[-1] + "loadScript", script, "aero7snap"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(scripting[:-1] + [scripting[-1] + "start"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+
+def main(argv):
+    if len(argv) < 2:
+        raise ValueError("Usage: aero7-snap-control status|enable|disable|sensitivity|set-sensitivity 0-100")
+    action = argv[1]
+    enabled = read("Plugins", "aero7snapEnabled", "true").lower() == "true"
+    if action == "status" and len(argv) == 2:
+        print("enabled" if enabled else "disabled")
+    elif action == "sensitivity" and len(argv) == 2:
+        print(read("Script-aero7snap", "Sensitivity", "35"))
+    elif action in ("enable", "disable") and len(argv) == 2:
+        # KWin's native edge tiling fires immediately and ignores Aero7's
+        # sensitivity. Only the Aero7 script owns pointer snapping.
+        write("Windows", "ElectricBorderTiling", "false")
+        write("Windows", "ElectricBorderMaximize", "false")
+        enabled = action == "enable"
+        write("Plugins", "aero7snapEnabled", "true" if enabled else "false")
+        refresh(enabled)
+    elif action == "set-sensitivity" and len(argv) == 3:
+        value = int(argv[2])
+        if value < 0 or value > 100:
+            raise ValueError("Sensitivity must be between 0 and 100")
+        write("Script-aero7snap", "Sensitivity", value)
+        refresh(enabled)
+    else:
+        raise ValueError("Usage: aero7-snap-control status|enable|disable|sensitivity|set-sensitivity 0-100")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv))
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)

@@ -75,6 +75,7 @@ install(PROGRAMS
     services/session/aero7-session-setup
     services/session/aero7-screenshot-identity
     services/session/aero7-portal-policy
+    services/session/aero7-snap-control
     DESTINATION ${AERO7_LIBEXECDIR}
 )
 
@@ -204,6 +205,13 @@ if(BUILD_TESTING)
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_source_policy.py)
     add_test(NAME source-snapshot
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_source_snapshot.py)
+    add_test(NAME snap-control
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_snap_control.py)
+    find_program(NODE_EXECUTABLE node)
+    if(NODE_EXECUTABLE)
+        add_test(NAME snap-behavior
+            COMMAND ${NODE_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_snap_behavior.js)
+    endif()
     add_test(NAME monospace-default
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_monospace_default.py)
     add_test(NAME install-profiles

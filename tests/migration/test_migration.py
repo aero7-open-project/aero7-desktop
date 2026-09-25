@@ -74,6 +74,8 @@ class MigrationTest(unittest.TestCase):
             self.assertIn("libkwin_effect_smodsnapEnabled=true", migrated_kwin)
             self.assertIn("aero7shakeEnabled=true", migrated_kwin)
             self.assertIn("aero7snapEnabled=true", migrated_kwin)
+            self.assertIn("ElectricBorderTiling=false", migrated_kwin)
+            self.assertIn("ElectricBorderMaximize=false", migrated_kwin)
             self.assertIn("fadingpopupsaeroEnabled=false", migrated_kwin)
             self.assertIn("fadingpopupsEnabled=true", migrated_kwin)
             self.assertIn("squashaeroEnabled=false", migrated_kwin)
@@ -84,6 +86,19 @@ class MigrationTest(unittest.TestCase):
                 (Path(payload["backup"]) / "kwinrc").read_text(encoding="utf-8"),
                 "# keep this comment\n[Windows]\nFocusPolicy=ClickToFocus\n",
             )
+
+    def test_optional_snap_choice_survives_a_migration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "config"
+            config.mkdir()
+            kwinrc = config / "kwinrc"
+            kwinrc.write_text("[Plugins]\naero7snapEnabled=false\n", encoding="utf-8")
+            environment = dict(os.environ, AERO7_CONFIG_HOME=str(config),
+                               AERO7_STATE_HOME=str(root / "state"))
+            subprocess.run((str(MIGRATOR),), env=environment, check=True,
+                           stdout=subprocess.DEVNULL)
+            self.assertIn("aero7snapEnabled=false", kwinrc.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

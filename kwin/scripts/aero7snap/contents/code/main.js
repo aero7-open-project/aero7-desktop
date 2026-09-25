@@ -37,24 +37,37 @@ function attach(window) {
     if (!eligible(window))
         return;
     let edge = 0;
-    window.interactiveMoveResizeStarted.connect(() => { edge = 0; });
+    let edgeEnteredAt = 0;
+    const sensitivity = Math.max(0, Math.min(100, Number(readConfig("Sensitivity", 35))));
+    const margin = 2 + Math.round(sensitivity / 25);
+    const holdMs = 600 - sensitivity * 5;
+    window.interactiveMoveResizeStarted.connect(() => { edge = 0; edgeEnteredAt = 0; });
     window.interactiveMoveResizeStepped.connect(geometry => {
         const area = usableArea(window);
-        edge = geometry.y <= area.y + 4 ? 3
-            : geometry.x <= area.x + 4 ? 1
-            : geometry.x + geometry.width >= area.x + area.width - 4 ? 2 : 0;
-        if (edge === 1)
+        const nextEdge = geometry.y <= area.y + margin ? 3
+            : geometry.x <= area.x + margin ? 1
+            : geometry.x + geometry.width >= area.x + area.width - margin ? 2 : 0;
+        if (nextEdge !== edge) {
+            edge = nextEdge;
+            edgeEnteredAt = edge ? Date.now() : 0;
+        }
+        const ready = edge && Date.now() - edgeEnteredAt >= holdMs;
+        if (ready && edge === 1)
             workspace.showOutline(area.x, area.y, Math.floor(area.width / 2), area.height);
-        else if (edge === 2)
+        else if (ready && edge === 2)
             workspace.showOutline(area.x + Math.floor(area.width / 2), area.y,
                                   Math.ceil(area.width / 2), area.height);
-        else if (edge === 3)
+        else if (ready && edge === 3)
             workspace.showOutline(area);
         else
             workspace.hideOutline();
     });
     window.interactiveMoveResizeFinished.connect(() => {
         workspace.hideOutline();
+        if (edge && Date.now() - edgeEnteredAt < holdMs) {
+            edge = 0;
+            return;
+        }
         if (edge === 1)
             snapLeft(window);
         else if (edge === 2)

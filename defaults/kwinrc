@@ -28,3 +28,7 @@ aero7shakeEnabled=true
 aero7snapEnabled=true
 squashaeroEnabled=false
 squashEnabled=true
+
+[Windows]
+ElectricBorderTiling=false
+ElectricBorderMaximize=false

@@ -43,6 +43,10 @@ KWIN_DEFAULTS = {
         "squashaeroEnabled": "false",
         "squashEnabled": "true",
     },
+    "Windows": {
+        "ElectricBorderTiling": "false",
+        "ElectricBorderMaximize": "false",
+    },
 }
 
 SHORTCUT_DEFAULTS = {
@@ -98,6 +102,10 @@ def apply_ini_settings(path: Path, settings: dict[str, dict[str, str]]) -> list[
                  if lines[index].split("=", 1)[0].strip() == key and "=" in lines[index]),
                 None,
             )
+            if section == "Plugins" and key == "aero7snapEnabled" and key_index is not None:
+                # The optional feature is a user choice; migrations must not
+                # re-enable it after the user cleared its check box.
+                continue
             replacement = f"{key}={value}\n"
             if key_index is None:
                 lines.insert(section_end, replacement)
