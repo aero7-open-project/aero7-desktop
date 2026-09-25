@@ -1,5 +1,10 @@
 # Optional Features and Companion Applications
 
+The full KDE System Settings application is hidden from menus and search by
+default. Open **Turn Aero7 features on or off** and select **Show KDE System
+Settings application** to make it available again. Aero7 Control Panel remains
+available while the KDE application is hidden.
+
 Search Start for **Turn Aero7 features on or off**. You can also open
 **Control Panel > Programs > Programs and Features** and choose the same
 link. This is the feature manager's displayed name, not "Windows Features."

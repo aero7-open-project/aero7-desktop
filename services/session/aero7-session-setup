@@ -22,6 +22,14 @@ wallpaper=/usr/share/wallpapers/Aero7/contents/images/1672x941.png
 mkdir -p "$state_home" "$config_home"
 chmod 700 "$state_home"
 
+# Aero7 Features owns the optional KDE System Settings launcher. Reconcile its
+# per-user application entries before the Start menu becomes available, while
+# keeping KDE's settings modules installed for Control Panel backends.
+if command -v aero7-system-settings-visibility >/dev/null 2>&1; then
+    aero7-system-settings-visibility ensure \
+        || printf 'Aero7 could not apply the System Settings visibility choice.\n' >&2
+fi
+
 ensure_fresh_desktop_default() {
     local marker="$state_home/fresh-desktop-v1.applied"
     local template='/etc/skel/Desktop/Recycle Bin.desktop'
