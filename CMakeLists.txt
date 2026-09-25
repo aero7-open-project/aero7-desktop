@@ -214,4 +214,6 @@ if(BUILD_TESTING)
     add_test(NAME session-reconcile-execution
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/session/test_reconcile_execution.py)
     set_tests_properties(session-reconcile-execution PROPERTIES TIMEOUT 60)
+    add_test(NAME tray-layout
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/session/test_tray_layout.py)
 endif()

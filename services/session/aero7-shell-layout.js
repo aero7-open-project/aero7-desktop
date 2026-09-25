@@ -96,11 +96,34 @@ function withoutDisabledTrayItems(items) {
     return filtered;
 }
 
-function configureTray(tray) {
+function readTraySettings(tray) {
+    if (!tray) {
+        return null;
+    }
+    tray.currentConfigGroup = ["General"];
+    return {
+        extraItems: tray.readConfig("extraItems", []),
+        shownItems: tray.readConfig("shownItems", []),
+        hiddenItems: tray.readConfig("hiddenItems", []),
+        disabledStatusNotifiers: tray.readConfig("disabledStatusNotifiers", []),
+        showAllItems: tray.readConfig("showAllItems", false),
+        itemOrdering: tray.readConfig("itemOrdering", "")
+    };
+}
+
+function configureTray(tray, settings) {
     if (!tray) {
         return;
     }
     tray.currentConfigGroup = ["General"];
+    if (settings) {
+        tray.writeConfig("extraItems", settings.extraItems);
+        tray.writeConfig("shownItems", settings.shownItems);
+        tray.writeConfig("hiddenItems", settings.hiddenItems);
+        tray.writeConfig("disabledStatusNotifiers", settings.disabledStatusNotifiers);
+        tray.writeConfig("showAllItems", settings.showAllItems);
+        tray.writeConfig("itemOrdering", settings.itemOrdering);
+    }
     tray.writeConfig("extraItems",
         withoutDisabledTrayItems(tray.readConfig("extraItems", [])));
     tray.writeConfig("shownItems",
@@ -109,7 +132,7 @@ function configureTray(tray) {
         withoutDisabledTrayItems(tray.readConfig("hiddenItems", [])));
 }
 
-function configurePanel(panel, screen, launchers) {
+function configurePanel(panel, screen, launchers, traySettings) {
     panel.screen = screen;
     panel.location = "bottom";
     panel.height = 40;
@@ -133,7 +156,7 @@ function configurePanel(panel, screen, launchers) {
     if (!tray) {
         tray = panel.addWidget(trayType);
     }
-    configureTray(tray);
+    configureTray(tray, traySettings);
     if (!firstWidget(panel, clockType)) {
         panel.addWidget(clockType);
     }
@@ -153,6 +176,7 @@ if (wantedScreens.length === 0) {
 var allPanels = panels();
 var keptByScreen = {};
 var canonicalLaunchers = null;
+var canonicalTraySettings = null;
 
 // Stock and foreign panels are removed rather than hidden or covered. Keep at
 // most one Aero panel for each output.
@@ -164,6 +188,10 @@ for (var index = 0; index < allPanels.length; ++index) {
         continue;
     }
     keptByScreen[candidateScreen] = candidate;
+    var candidateTray = firstWidget(candidate, trayType);
+    if (candidateTray && (!canonicalTraySettings || candidateScreen === 0)) {
+        canonicalTraySettings = readTraySettings(candidateTray);
+    }
     var candidateTasks = firstWidget(candidate, tasksType);
     if (candidateTasks) {
         candidateTasks.currentConfigGroup = ["General"];
@@ -193,7 +221,7 @@ for (var wantedIndex = 0; wantedIndex < wantedScreens.length; ++wantedIndex) {
         panel = new Panel(aeroPanelType);
         keptByScreen[wantedScreen] = panel;
     }
-    configurePanel(panel, wantedScreen, canonicalLaunchers);
+    configurePanel(panel, wantedScreen, canonicalLaunchers, canonicalTraySettings);
 }
 
 print("Aero7 layout reconciled: panels=" + panels().length
