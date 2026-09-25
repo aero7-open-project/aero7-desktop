@@ -168,7 +168,10 @@ for (var index = 0; index < allPanels.length; ++index) {
     if (candidateTasks) {
         candidateTasks.currentConfigGroup = ["General"];
         var savedLaunchers = candidateTasks.readConfig("launchers", []);
-        if (savedLaunchers && savedLaunchers.length > 0) {
+        // Prefer the primary panel even if Plasma enumerates it later. A
+        // stale secondary copy must not become the source for every screen.
+        if ((!canonicalLaunchers || candidateScreen === 0)
+                && savedLaunchers && savedLaunchers.length > 0) {
             canonicalLaunchers = savedLaunchers;
             var factoryPinMigrationDone = candidateTasks.readConfig(
                 "windows7FactoryPinLayoutMigrated", false);
