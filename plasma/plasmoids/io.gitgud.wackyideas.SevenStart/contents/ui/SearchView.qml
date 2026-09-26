@@ -36,6 +36,15 @@ Item {
     property int repeaterModelIndex: 0
     property var unfilteredRunnerModel: null
 
+    // KRunner queries can be expensive. Coalesce a burst of keystrokes so
+    // typing a name does not start a new search for every intermediate text.
+    Timer {
+        id: queryDelay
+        interval: 120
+        repeat: false
+        onTriggered: runnerModel.query = searchField.text
+    }
+
     KItemModels.KSortFilterProxyModel {
         id: filteredRunnerModel
 
@@ -95,11 +104,13 @@ Item {
     }
     function onQueryChanged() {
         queryFinished = false;
-        runnerModel.query = searchField.text;
-        filteredRunnerModel.invalidateFilter();
+        queryDelay.stop();
+        unfilteredRunnerModel = null;
+        runnerGrid.model = null;
         if (!searchField.text) {
-            unfilteredRunnerModel = null;
-            runnerGrid.model = null;
+            runnerModel.query = "";
+        } else {
+            queryDelay.start();
         }
     }
     function openContextMenu() {
@@ -110,12 +121,13 @@ Item {
 
     Connections {
         function onCountChanged() {
-            if (runnerModel.count && !runnerGrid.model) {
+            if (runnerModel.query === searchField.text
+                    && runnerModel.count && !runnerGrid.model) {
                 refreshResultsModel();
             }
         }
         function onQueryFinished() {
-            if (runnerModel.count) {
+            if (runnerModel.query === searchField.text) {
                 refreshResultsModel();
                 queryFinished = true;
                 var listView = runnerGrid.flickableItem;
