@@ -6,6 +6,7 @@
 - [First Login and Defaults](First-Login-and-Defaults)
 - [Screenshots and Clipboard](Screenshots-and-Clipboard)
 - [Desktop Gadgets](Desktop-Gadgets)
+- [Media Player](Media-Player)
 - [Optional Features](Optional-Features)
 - [1920×1080 Screenshots](Screenshots)
 - [Included Components](Included-Components)

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Media Player
+GenericName=Audio and video player
+Comment=Play audio and video with the Aero7 VLC skin
+Exec=vlc -I skins2 --skins2-last=/usr/share/vlc/skins2/aero7-media-player.vlt --started-from-file %U
+TryExec=vlc
+Icon=aero7-media-player
+Terminal=false
+StartupNotify=true
+Categories=AudioVideo;Audio;Video;Player;
+MimeType=audio/mpeg;audio/mp4;audio/x-m4a;audio/x-wav;audio/flac;audio/ogg;audio/x-ms-wma;video/mp4;video/x-m4v;video/x-matroska;video/x-msvideo;video/x-ms-wmv;video/quicktime;
+Keywords=media;player;music;video;movie;VLC;

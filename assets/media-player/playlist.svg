@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520" viewBox="0 0 800 520">
+  <defs>
+    <linearGradient id="bar" x2="0" y2="1"><stop stop-color="#e4f1ff"/><stop offset=".42" stop-color="#bed7f0"/><stop offset="1" stop-color="#79a8d1"/></linearGradient>
+    <linearGradient id="toolbar" x2="0" y2="1"><stop stop-color="#f7fbff"/><stop offset="1" stop-color="#d7e6f4"/></linearGradient>
+    <linearGradient id="sidebar" x2="0" y2="1"><stop stop-color="#e8f3fc"/><stop offset="1" stop-color="#d7e6f5"/></linearGradient>
+  </defs>
+  <rect x="1" y="1" width="798" height="518" rx="7" fill="#f8fcff" stroke="#6e9bc1" stroke-width="2"/>
+  <path d="M8 2h784a7 7 0 0 1 7 7v21H1V9a7 7 0 0 1 7-7" fill="url(#bar)"/>
+  <rect x="6" y="30" width="788" height="65" fill="url(#toolbar)"/>
+  <path d="M6 94h788" stroke="#9ab9d5"/>
+  <rect x="6" y="95" width="173" height="378" fill="url(#sidebar)"/>
+  <path d="M179 95v378" stroke="#a9c6df"/>
+  <rect x="180" y="95" width="614" height="378" fill="#ffffff"/>
+  <rect x="181" y="95" width="611" height="28" fill="url(#toolbar)"/>
+  <path d="M181 123h611" stroke="#bed2e3"/>
+  <rect x="6" y="474" width="788" height="39" fill="url(#toolbar)"/>
+  <path d="M6 474h788" stroke="#9ab9d5"/>
+</svg>

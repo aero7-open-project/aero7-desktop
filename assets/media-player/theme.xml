@@ -1,0 +1,71 @@
+<!DOCTYPE Theme PUBLIC "-//VideoLAN//DTD VLC Skins V2.0//EN" "skin.dtd">
+<Theme version="2.0" alpha="255" movealpha="220">
+  <ThemeInfo name="Aero7 Media Player" author="Aero7 Open Project" webpage="https://aero7.org"/>
+
+  <Bitmap id="now-background" file="main.png" alphacolor="#ff00ff">
+    <SubBitmap id="now-titlebar" x="0" y="0" width="760" height="30"/>
+  </Bitmap>
+  <Bitmap id="queue-background" file="playlist.png" alphacolor="#ff00ff">
+    <SubBitmap id="queue-titlebar" x="0" y="0" width="800" height="30"/>
+  </Bitmap>
+  <Bitmap id="seek-knob" file="slider.png" alphacolor="#ff00ff"/>
+  <Bitmap id="player-icon" file="icons/audio-player.png" alphacolor="#ff00ff"/>
+  <Bitmap id="large-player-icon" file="icons/audio-player-large.png" alphacolor="#ff00ff"/>
+  <Bitmap id="play-icon" file="icons/media-playback-start.png" alphacolor="#ff00ff"/>
+  <Bitmap id="pause-icon" file="icons/media-playback-pause.png" alphacolor="#ff00ff"/>
+  <Bitmap id="stop-icon" file="icons/media-playback-stop.png" alphacolor="#ff00ff"/>
+  <Bitmap id="previous-icon" file="icons/media-skip-backward.png" alphacolor="#ff00ff"/>
+  <Bitmap id="next-icon" file="icons/media-skip-forward.png" alphacolor="#ff00ff"/>
+  <Bitmap id="open-icon" file="icons/document-open.png" alphacolor="#ff00ff"/>
+  <Bitmap id="playlist-icon" file="icons/view-list-details.png" alphacolor="#ff00ff"/>
+  <Bitmap id="fullscreen-icon" file="icons/view-fullscreen.png" alphacolor="#ff00ff"/>
+  <Bitmap id="close-icon" file="icons/window-close.png" alphacolor="#ff00ff"/>
+  <Bitmap id="add-icon" file="icons/list-add.png" alphacolor="#ff00ff"/>
+  <Bitmap id="volume-on-icon" file="icons/stock_volume-max.png" alphacolor="#ff00ff"/>
+  <Bitmap id="volume-off-icon" file="icons/stock_volume-mute.png" alphacolor="#ff00ff"/>
+
+  <Window id="now" position="Center" dragdrop="true" playondrop="true">
+    <Layout id="now-playing" width="760" height="520">
+      <Image id="now-surface" image="now-background"/>
+      <Image id="now-drag" image="now-titlebar" action="move"/>
+      <Image id="now-icon" x="8" y="7" width="16" height="16" image="player-icon" resize="scale2"/>
+      <Text id="now-window-title" x="30" y="8" width="400" font="defaultfont" text="Aero7 Media Player" color="#162d45" scrolling="none" focus="false"/>
+      <Button id="now-close" x="735" y="7" up="close-icon" action="vlc.quit()" tooltiptext="Close Media Player"/>
+
+      <Text id="track-name" x="18" y="40" width="565" font="defaultfont" text="$N" color="#ffffff" scrolling="auto"/>
+      <Text id="track-duration" x="605" y="40" width="130" font="defaultfont" text="$T / $D" alignment="right" color="#cbdbe8" scrolling="none" visible="not vlc.isStopped"/>
+      <Image id="art-placeholder" x="314" y="179" width="132" height="132" image="large-player-icon" resize="scale2"/>
+      <Image id="album-art" x="282" y="145" width="196" height="196" image="large-player-icon" resize="scale2" art="true"/>
+      <Video id="movie" x="12" y="68" width="736" height="370" visible="vlc.hasVout" autoresize="false"/>
+
+      <Slider id="position" x="18" y="448" width="724" height="14" points="(0,7),(724,7)" value="time" up="seek-knob" tooltiptext="Seek: $T / $D"/>
+      <Button id="open-file" x="23" y="475" up="open-icon" action="dialogs.file()" tooltiptext="Open file"/>
+      <Checkbox id="queue-toggle" x="66" y="475" state="queue.isVisible" up1="playlist-icon" up2="playlist-icon" action1="queue.show()" action2="queue.hide()" tooltiptext1="Show playlist" tooltiptext2="Hide playlist"/>
+      <Button id="previous" x="278" y="474" up="previous-icon" action="playlist.previous()" tooltiptext="Previous"/>
+      <Checkbox id="play-pause" x="333" y="474" state="vlc.isPlaying" up1="play-icon" up2="pause-icon" action1="vlc.play()" action2="vlc.pause()" tooltiptext1="Play" tooltiptext2="Pause"/>
+      <Button id="stop" x="380" y="474" up="stop-icon" action="vlc.stop()" tooltiptext="Stop"/>
+      <Button id="next" x="428" y="474" up="next-icon" action="playlist.next()" tooltiptext="Next"/>
+      <Checkbox id="volume-mute" x="599" y="480" state="vlc.isMute" up1="volume-on-icon" up2="volume-off-icon" action1="vlc.mute()" action2="vlc.mute()" tooltiptext1="Mute" tooltiptext2="Unmute"/>
+      <Slider id="volume" x="625" y="480" width="79" height="14" points="(0,7),(79,7)" value="volume" up="seek-knob" tooltiptext="Volume: $V%"/>
+      <Button id="fullscreen" x="713" y="475" up="fullscreen-icon" action="vlc.fullscreen()" tooltiptext="Full screen"/>
+    </Layout>
+  </Window>
+
+  <Window id="queue" visible="false" position="Center" dragdrop="true" playondrop="false">
+    <Layout id="playlist-view" width="800" height="520">
+      <Image id="queue-surface" image="queue-background"/>
+      <Image id="queue-drag" image="queue-titlebar" action="move"/>
+      <Image id="queue-icon" x="8" y="7" width="16" height="16" image="player-icon" resize="scale2"/>
+      <Text id="queue-title" x="30" y="8" width="450" font="defaultfont" text="Media Player - Playlist" color="#162d45" scrolling="none" focus="false"/>
+      <Button id="queue-close" x="775" y="7" up="close-icon" action="queue.hide()" tooltiptext="Close playlist"/>
+      <Text id="queue-breadcrumb" x="22" y="48" width="520" font="defaultfont" text="Library  &gt;  Now Playing" color="#274f79" scrolling="none"/>
+      <Button id="queue-add" x="22" y="100" up="add-icon" action="dialogs.file()" tooltiptext="Add files to playlist"/>
+      <Text id="queue-label" x="45" y="102" width="120" font="defaultfont" text="Add files" color="#194777" scrolling="none"/>
+      <Text id="queue-now" x="22" y="146" width="145" font="defaultfont" text="Now Playing" color="#143e66" scrolling="none"/>
+      <Text id="queue-hint" x="22" y="180" width="145" font="defaultfont" text="Drag files here" color="#5a7188" scrolling="none"/>
+      <Text id="queue-heading" x="192" y="103" width="580" font="defaultfont" text="Title" color="#365678" scrolling="none"/>
+      <Playtree id="playlist-items" x="190" y="126" width="592" height="335" font="defaultfont" fgcolor="#17324a" playcolor="#004b8d" selcolor="#b6d7f0" bgcolor1="#ffffff" bgcolor2="#f4f9fd" flat="true"/>
+      <Text id="queue-current" x="19" y="488" width="715" font="defaultfont" text="$N" color="#254c71" scrolling="auto"/>
+    </Layout>
+  </Window>
+</Theme>

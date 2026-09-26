@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Choose Aero7 Media Player for media types only when users have no choice yet."""
+
+from __future__ import annotations
+
+import os
+import hashlib
+from pathlib import Path
+
+
+DESKTOP_ID = "aero7-media-player.desktop"
+# Exact Aero7 legacy override emitted by the previous integration script.
+# Never change a user's custom VLC launcher that merely has the same filename.
+LEGACY_VLC_SHA256 = "7d393b8e25a6ac26811999f0a3e6a6d29bc7b64ddcc2c5c6000e1e8533bf3a5d"
+MIME_TYPES = (
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/x-m4a",
+    "audio/x-wav",
+    "audio/flac",
+    "audio/ogg",
+    "audio/x-ms-wma",
+    "video/mp4",
+    "video/x-m4v",
+    "video/x-matroska",
+    "video/x-msvideo",
+    "video/x-ms-wmv",
+    "video/quicktime",
+)
+
+
+def ensure_defaults(path: Path) -> bool:
+    """Preserve the original file and explicit user defaults byte-for-byte."""
+    original = path.read_text(encoding="utf-8") if path.exists() else ""
+    lines = original.splitlines(keepends=True)
+    section_start = None
+    section_end = len(lines)
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == "[Default Applications]":
+            section_start = index
+        elif section_start is not None and stripped.startswith("[") and stripped.endswith("]"):
+            section_end = index
+            break
+
+    if section_start is None:
+        entries = [f"{mime}={DESKTOP_ID}\n" for mime in MIME_TYPES]
+        separator = "" if not original or original.endswith("\n") else "\n"
+        updated = original + separator + "[Default Applications]\n" + "".join(entries)
+    else:
+        existing = {
+            line.split("=", 1)[0].strip()
+            for line in lines[section_start + 1 : section_end]
+            if "=" in line and not line.lstrip().startswith(("#", ";"))
+        }
+        missing = [f"{mime}={DESKTOP_ID}\n" for mime in MIME_TYPES if mime not in existing]
+        if not missing:
+            return False
+        if section_end > 0 and lines[section_end - 1] and not lines[section_end - 1].endswith("\n"):
+            missing.insert(0, "\n")
+        lines[section_end:section_end] = missing
+        updated = "".join(lines)
+
+    if updated == original:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".aero7-tmp")
+    temporary.write_text(updated, encoding="utf-8")
+    if path.exists():
+        temporary.chmod(path.stat().st_mode & 0o777)
+    os.replace(temporary, path)
+    return True
+
+
+def hide_legacy_vlc_launcher(path: Path) -> bool:
+    """Avoid two identical Media Player entries, with a recoverable backup."""
+    if not path.is_file() or path.is_symlink():
+        return False
+    original = path.read_bytes()
+    if hashlib.sha256(original).hexdigest() != LEGACY_VLC_SHA256:
+        return False
+    backup = path.with_name(path.name + ".aero7-pre-skin")
+    if not backup.exists():
+        with backup.open("xb") as stream:
+            stream.write(original)
+        backup.chmod(path.stat().st_mode & 0o777)
+    temporary = path.with_name(path.name + ".aero7-tmp")
+    temporary.write_bytes(original + b"NoDisplay=true\n")
+    temporary.chmod(path.stat().st_mode & 0o777)
+    os.replace(temporary, path)
+    return True
+
+
+if __name__ == "__main__":
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    data_home = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
+    hide_legacy_vlc_launcher(data_home / "applications/vlc.desktop")
+    ensure_defaults(config_home / "mimeapps.list")

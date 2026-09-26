@@ -13,6 +13,7 @@ an unrelated visible desktop.
 | Aero7 File Explorer | Files, Libraries, Computer, Network, Recycle Bin, and dialogs |
 | Aero7 Internet Explorer compatibility | Permanent browser identity backed by a selected modern browser |
 | Aero7 Desktop Gadgets | Gallery, persistence, and nine built-in gadgets |
+| Aero7 Media Player | VLC-backed Windows 7-style Now Playing, video, album art, controls, and playlist |
 | Aero7 recovery | Health checks, diagnostics, same-shell restart, and safe reset |
 | KWin integrations | Glass, blur, Snap, Shake, Peek, switchers, and display behavior |
 
@@ -65,6 +66,18 @@ resources are not redistributed.
 
 See [Desktop Gadgets](Desktop-Gadgets) for each gadget's purpose, settings,
 network requirements, persistence, and migration from older test widgets.
+
+## Media Player
+
+The bundled Media Player is a VLC skins2 theme, not a copy of the Windows
+program. It opens common audio/video files, plays video in the Now Playing
+window, shows album art when available, and offers an actual playlist. Aero7
+chooses it as the first-use handler for MP3, M4A, MP4, and other listed media
+types only if the user has not explicitly chosen another default. The skin
+does not provide Windows Media Player's searchable library, disc burning,
+device sync, or Play To network-device workflow. See the
+[Media Player guide](Media-Player) for supported controls and
+troubleshooting.
 
 ## Administration and optional software
 

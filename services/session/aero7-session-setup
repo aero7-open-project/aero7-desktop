@@ -22,6 +22,11 @@ wallpaper=/usr/share/wallpapers/Aero7/contents/images/1672x941.png
 mkdir -p "$state_home" "$config_home"
 chmod 700 "$state_home"
 
+# Set a first-use player while leaving any explicit audio/video choice intact.
+if [[ -x /usr/lib/aero7-desktop/aero7-media-associations ]]; then
+    /usr/lib/aero7-desktop/aero7-media-associations
+fi
+
 # Aero7 Features owns the optional KDE System Settings launcher. Reconcile its
 # per-user application entries before the Start menu becomes available, while
 # keeping KDE's settings modules installed for Control Panel backends.

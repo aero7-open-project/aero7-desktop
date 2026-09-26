@@ -73,6 +73,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dolphin-aero7.mo
 install(PROGRAMS
     services/session/aero7-shell-service
     services/session/aero7-session-setup
+    services/session/aero7-media-associations
     services/session/aero7-screenshot-identity
     services/session/aero7-portal-policy
     services/session/aero7-snap-control
@@ -121,6 +122,39 @@ endif()
 install(FILES packaging/applications/org.kde.baloo.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
 )
+
+# VLC skins2 archives are gzip-compressed tar files. Keep the original Aero7
+# backdrop and the already-used icon pack's controls inside the player itself.
+file(GLOB AERO7_MEDIA_ICON_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/media-player/icons/*.png"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/media-player/icons/app/*.png")
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/aero7-media-player.vlt
+    COMMAND ${CMAKE_COMMAND} -E tar czf
+            ${CMAKE_CURRENT_BINARY_DIR}/aero7-media-player.vlt
+            theme.xml main.png playlist.png slider.png icons
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/media-player
+    DEPENDS assets/media-player/theme.xml
+            assets/media-player/main.png
+            assets/media-player/playlist.png
+            assets/media-player/slider.png
+            ${AERO7_MEDIA_ICON_FILES}
+    VERBATIM
+)
+add_custom_target(aero7-media-player-skin ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/aero7-media-player.vlt)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aero7-media-player.vlt
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/vlc/skins2)
+install(FILES packaging/applications/aero7-media-player.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+foreach(size 16 24 32 48 64 256)
+    install(FILES assets/media-player/icons/app/${size}.png
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps
+        RENAME aero7-media-player.png)
+endforeach()
+install(FILES assets/media-player/ICON-LICENSE assets/media-player/ICON-PROVENANCE.md
+    assets/media-player/ASSET-PROVENANCE.md
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/aero7-desktop/media-player)
 
 install(FILES
     packaging/systemd/aero7-shell.service
@@ -219,6 +253,10 @@ if(BUILD_TESTING)
     set_tests_properties(install-profiles PROPERTIES TIMEOUT 180)
     add_test(NAME screenshot-identity
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/session/test_screenshot_identity.py)
+    add_test(NAME media-associations
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_media_associations.py)
+    add_test(NAME media-skin
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_media_skin.py)
     add_test(NAME session-reconcile-execution
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/session/test_reconcile_execution.py)
     set_tests_properties(session-reconcile-execution PROPERTIES TIMEOUT 60)
