@@ -11,7 +11,10 @@ include(GNUInstallDirs)
 include(CTest)
 option(AERO7_INSTALL_TEST_TOOLS "Install VM acceptance helpers (test images only)" OFF)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core DBus Gui Qml Quick)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent DBus Gui Qml Quick Widgets)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBVLC REQUIRED IMPORTED_TARGET libvlc)
+pkg_check_modules(TAGLIB REQUIRED IMPORTED_TARGET taglib)
 find_program(MSGFMT_EXECUTABLE msgfmt REQUIRED)
 
 add_custom_command(
@@ -38,6 +41,32 @@ qt_add_resources(aero7-recovery-ui recovery-qml
 set_target_properties(aero7-recovery-ui PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN TRUE)
 target_link_libraries(aero7-recovery-ui PRIVATE Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick)
 
+qt_add_executable(aero7-media-player apps/media-player/main.cpp)
+qt_add_resources(aero7-media-player aero7-media-icons
+    PREFIX /media
+    FILES
+        assets/media-player/icons/app/64.png
+        assets/media-player/icons/document-open.png
+        assets/media-player/icons/list-add.png
+        assets/media-player/icons/media-playback-pause.png
+        assets/media-player/icons/media-playback-start.png
+        assets/media-player/icons/media-playback-stop.png
+        assets/media-player/icons/media-skip-backward.png
+        assets/media-player/icons/media-skip-forward.png
+        assets/media-player/icons/stock_volume-max.png
+        assets/media-player/icons/stock_volume-mute.png
+        assets/media-player/icons/view-fullscreen.png
+        assets/media-player/icons/view-list-details.png
+        assets/media-player/icons/library/audio-art.png
+        assets/media-player/icons/library/back.png
+        assets/media-player/icons/library/folder.png
+        assets/media-player/icons/library/forward.png
+        assets/media-player/icons/library/music.png
+        assets/media-player/icons/library/search.png
+        assets/media-player/icons/library/videos.png
+)
+target_link_libraries(aero7-media-player PRIVATE Qt6::Concurrent Qt6::Widgets PkgConfig::LIBVLC PkgConfig::TAGLIB)
+
 if(BUILD_TESTING OR AERO7_INSTALL_TEST_TOOLS)
     qt_add_executable(aero7-test-status-notifier tests/integration/status_notifier_item.cpp)
     target_link_libraries(aero7-test-status-notifier PRIVATE Qt6::Core Qt6::DBus)
@@ -49,7 +78,7 @@ endif()
 set(AERO7_LIBEXECDIR "${CMAKE_INSTALL_LIBEXECDIR}/aero7-desktop")
 set(AERO7_DATADIR "${CMAKE_INSTALL_DATADIR}/aero7-desktop")
 
-install(TARGETS aero7-recovery-ui
+install(TARGETS aero7-recovery-ui aero7-media-player
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 if(AERO7_INSTALL_TEST_TOOLS)

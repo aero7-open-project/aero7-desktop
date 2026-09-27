@@ -24,10 +24,11 @@ Aero7 launcher, backend-selection library, tests, and documentation. Its reused
 pack icons are documented in the [asset provenance](companions/aero7-internet-explorer/docs/ASSET-PROVENANCE.md)
 and accompanying upstream notices; the MIT source licence does not relabel them.
 
-The [Media Player skin](assets/media-player/ASSET-PROVENANCE.md) embeds
-unmodified controls and launcher icons from the same AeroThemePlasma pack.
-Its backdrops are original Aero7 SVG artwork; the imported icons retain the
-pack's separate AGPL-3.0-or-later and upstream rights notices.
+The [Media Player](assets/media-player/ASSET-PROVENANCE.md) embeds unmodified
+controls, library, and launcher icons from the same AeroThemePlasma pack in
+its native Qt window and optional VLC fallback skin. The fallback backdrops
+are original Aero7 SVG artwork; imported icons retain the pack's separate
+AGPL-3.0-or-later and upstream rights notices.
 
 The optional [Credential Vault](companions/aero7-credential-vault/README.md)
 uses KWallet for encrypted storage. Its [native-dialog integration](integration/credential-vault/kwallet/README.md)

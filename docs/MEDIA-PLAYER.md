@@ -1,18 +1,30 @@
 # Aero7 Media Player
 
-Aero7 Media Player is a VLC skins2 player styled after Windows Media Player
-12's separate Now Playing window. It retains VLC's real codec and playback
-engine. The package requires `vlc`, `vlc-gui-skins2`, and
-`vlc-plugin-ffmpeg` (needed for common H.264/MP4 video on Arch's split VLC).
+Aero7 Media Player is a native Qt window with the active Aero7/KWin window
+decoration. It uses libVLC for playback, so it is not the standard VLC window.
+Opening it without a file shows a Windows 7-style library; opening a media file
+switches to Now Playing. The earlier VLC skins2 theme remains packaged as an
+optional fallback but is not the application launcher.
 
-## What works
+## Library and playback
 
-- MP3, M4A, MP4 and other formats supported by the installed VLC plugins.
-- Embedded video, album art (when present), current title and time.
-- Play/pause, stop, previous/next, seek, volume, mute, full screen, open file,
-  drag-and-drop, and a separate, interactive playlist window.
-- File-opening from Explorer and other XDG-compliant apps through the
-  `aero7-media-player.desktop` MIME associations.
+- The Music and Videos folders are scanned in the background. **Add folder**
+  adds another location without changing or moving files; **Refresh library**
+  rescans them. A search box filters title, artist, album, and genre.
+- Music tags, track length, and embedded or folder cover art are read when
+  available. Artist, Album, and Genre entries sort the same real library.
+- Double-click a track to play it. **Open file** and drag-and-drop also work.
+  The Now Playing list can be opened, saved as M3U, and loaded from M3U.
+- Play/pause, stop, previous/next, seek, volume, mute, and full screen control
+  libVLC. MP3, M4A, and MP4 are tested formats; additional formats depend on
+  the installed VLC plugins.
+- A network stream can be opened from the **Stream** menu. This uses libVLC's
+  URL playback; supported protocols vary by installation.
+
+On a Wayland desktop, the app uses XWayland so libVLC 3 can embed video in its
+decorated window. The package depends on `xorg-xwayland`, `libvlc`, `taglib`,
+and VLC's FFmpeg plugin. The icons are embedded from the AeroThemePlasma icon
+pack, so changing the global icon theme does not change this app's controls.
 
 Aero7 adds media defaults to the user's `mimeapps.list` only where that user
 has not already chosen a handler. To change an association later, use Default
@@ -23,21 +35,22 @@ beside it. Customized VLC launchers are not changed.
 
 ## Limits
 
-VLC skins2 cannot implement Windows Media Player's indexed/searchable media
-library, Burn and Sync tabs, CD ripping workflow, Play To device routing, or
-Windows taskbar thumbnail controls. The playlist view is a real VLC queue,
-not an inactive imitation of those features. Some audio/video formats require
-additional VLC codec plugins or have DRM that VLC cannot play.
+The library browses folders; it is not Windows Media Player's indexed media
+database or online media guide. Burn, Sync, CD ripping, Play To, and Windows
+taskbar thumbnail controls are not implemented. Burn and Sync tabs are shown
+disabled, rather than pretending to work. DRM-protected Windows media may not
+play through libVLC.
 
 ## Troubleshooting
 
-- If the player opens in ordinary VLC chrome, verify `vlc-gui-skins2` is
-  installed and launch `aero7-media-player.desktop` rather than `vlc.desktop`.
+- If **Media Player** still opens the ordinary VLC window, check which entry
+  was launched. The Aero7 desktop file is
+  `/usr/share/applications/aero7-media-player.desktop` and runs
+  `/usr/bin/aero7-media-player`, not `vlc.desktop`.
 - If files still open in another app, check `xdg-mime query default audio/mpeg`,
   `audio/x-m4a`, or `video/mp4`. An explicit earlier choice is intentionally
   preserved; choose Media Player in Default Applications to change it.
-- If video opens separately, check VLC's `skinned-video` setting is enabled.
-  It is enabled by default in VLC 3.0.23.
+- If embedded video is missing, check that XWayland is installed and `DISPLAY`
+  exists in the session. The media engine can still play audio without it.
 
-The underlying skin file is `/usr/share/vlc/skins2/aero7-media-player.vlt`.
-The launcher and native-size icon resources are installed by `aero7-desktop`.
+The older manual skin remains at `/usr/share/vlc/skins2/aero7-media-player.vlt`.

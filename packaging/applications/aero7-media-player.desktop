@@ -2,9 +2,9 @@
 Type=Application
 Name=Media Player
 GenericName=Audio and video player
-Comment=Play audio and video with the Aero7 VLC skin
-Exec=vlc -I skins2 --skins2-last=/usr/share/vlc/skins2/aero7-media-player.vlt --started-from-file %U
-TryExec=vlc
+Comment=Browse your library and play audio and video with VLC
+Exec=aero7-media-player %U
+TryExec=aero7-media-player
 Icon=aero7-media-player
 Terminal=false
 StartupNotify=true

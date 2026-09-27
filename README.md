@@ -85,8 +85,8 @@ File Explorer instead of exposing a second competing desktop interface.
   supported modern browser backend
 - Aero7 Desktop Gadgets gallery with Calendar, Clock, CPU Meter, Currency,
   Feed Headlines, Picture Puzzle, Slide Show, Weather, and Media Center
-- Aero7 Media Player: a Windows 7-inspired VLC skin with Now Playing,
-  video, album art, playback controls, and a real playlist window
+- Aero7 Media Player: an Aero7-decorated, Windows 7-inspired library and
+  Now Playing window backed by VLC, with video, music tags, and playlists
 - Native notifications, network/audio/power status, wallpaper and theme
   defaults, migration, shell health supervision, and recovery tools
 - Existing user settings are migrated non-destructively with dated backups
@@ -105,7 +105,7 @@ features.
 | Aero7 File Explorer | Files, Libraries, Computer, Network, and common dialogs |
 | Aero7 Internet Explorer compatibility | Familiar browser identity, modern backend selection, default handling, taskbar grouping, new-window and InPrivate actions |
 | Aero7 Desktop Gadgets | Gallery, persistence, multi-monitor placement, and nine built-ins |
-| Aero7 Media Player | VLC-backed Now Playing and playlist views, with first-use audio/video file associations |
+| Aero7 Media Player | Native Aero7-decorated library and VLC-backed Now Playing, with first-use audio/video file associations |
 | Aero7 recovery | Status, logs, same-shell restart, safe reset, and recovery UI |
 
 The desktop package brings these maintained components together as one tested

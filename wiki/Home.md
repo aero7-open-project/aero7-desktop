@@ -39,7 +39,7 @@ package versions and visible limits of each screenshot set.
 - **[Screenshots and Clipboard](Screenshots-and-Clipboard)** — Meta+Shift+S,
   PNG saving, image paste, notifications, and troubleshooting
 - **[Desktop Gadgets](Desktop-Gadgets)** — all nine built-ins and their limits
-- **[Media Player](Media-Player)** — VLC-backed Now Playing, playlist, and media defaults
+- **[Media Player](Media-Player)** — Aero7-decorated library, VLC-backed Now Playing, and media defaults
 - **[Optional Features](Optional-Features)** — Programs Center Beta and the
   supported optional services
 - **[Installation and Updates](Installation-and-Updates)** — install from the

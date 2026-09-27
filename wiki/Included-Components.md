@@ -13,7 +13,7 @@ an unrelated visible desktop.
 | Aero7 File Explorer | Files, Libraries, Computer, Network, Recycle Bin, and dialogs |
 | Aero7 Internet Explorer compatibility | Permanent browser identity backed by a selected modern browser |
 | Aero7 Desktop Gadgets | Gallery, persistence, and nine built-in gadgets |
-| Aero7 Media Player | VLC-backed Windows 7-style Now Playing, video, album art, controls, and playlist |
+| Aero7 Media Player | Native Aero7-decorated library and VLC-backed Now Playing, with video, album art, controls, and playlists |
 | Aero7 recovery | Health checks, diagnostics, same-shell restart, and safe reset |
 | KWin integrations | Glass, blur, Snap, Shake, Peek, switchers, and display behavior |
 
@@ -69,13 +69,15 @@ network requirements, persistence, and migration from older test widgets.
 
 ## Media Player
 
-The bundled Media Player is a VLC skins2 theme, not a copy of the Windows
-program. It opens common audio/video files, plays video in the Now Playing
-window, shows album art when available, and offers an actual playlist. Aero7
+The bundled Media Player is a native Aero7-decorated application backed by
+libVLC, not a copy of the Windows program or the ordinary VLC window. It
+opens common audio/video files, browses Music and Videos folders, displays
+artist/album/genre tags, plays video in Now Playing, shows album art when
+available, and offers an actual saveable playlist. Aero7
 chooses it as the first-use handler for MP3, M4A, MP4, and other listed media
-types only if the user has not explicitly chosen another default. The skin
-does not provide Windows Media Player's searchable library, disc burning,
-device sync, or Play To network-device workflow. See the
+types only if the user has not explicitly chosen another default. The library
+is a folder browser rather than Windows Media Player's indexed database;
+disc burning, device sync, and Play To are unavailable. See the
 [Media Player guide](Media-Player) for supported controls and
 troubleshooting.
 

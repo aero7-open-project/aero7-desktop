@@ -1,15 +1,15 @@
 # Media Player
 
-Aero7's Media Player uses VLC's playback engine with a Windows 7-inspired
-skin. The dark Now Playing window includes album art or video, a seek bar,
-play/pause, stop, previous/next, volume, mute, full screen, and file opening.
-The list button opens a separate, working VLC playlist window. Files may also
-be dragged onto either window.
+Media Player opens to a Windows 7-style music library with the Aero7 window
+decoration. It is a native Aero7 app using VLC's playback engine, not the
+ordinary VLC window. Open an MP3, M4A, MP4, or another supported file to enter
+Now Playing, where album art or video, transport controls, seek, volume, and
+full screen are available.
 
-The player is included in the `aero7-desktop` package; `vlc`,
-`vlc-gui-skins2`, and `vlc-plugin-ffmpeg` are required dependencies. Its application and control icons
-are bundled from the AeroThemePlasma icon pack, so changing the global icon
-theme does not change the player identity.
+The library browses your Music and Videos folders. You can add a folder,
+search, sort music by artist/album/genre, open individual files, or drag files
+onto the window. Its Now Playing list can be saved and opened as an M3U
+playlist. Album art and music tags are shown when the files provide them.
 
 ## Opening files
 
@@ -18,13 +18,13 @@ including MP3, M4A, and MP4, when there is no explicit user preference.
 Existing file-opening choices are never overwritten. To change one, use the
 file's **Open With** action or **Default Applications**.
 
-If a file opens in standard VLC instead, check that you launched **Media
-Player** and that `vlc-gui-skins2` is installed. If a video opens outside the
-skinned window, ensure VLC's **skinned video** setting is enabled.
+The player uses icons bundled from the AeroThemePlasma icon pack. It uses
+XWayland on Wayland sessions to embed libVLC 3 video within the Aero7-decorated
+window. The old VLC skin is still available as a manual fallback, but the
+normal **Media Player** launcher does not open VLC's own interface.
 
 ## What is not included
 
-This is a real VLC skin, not a port of Windows Media Player. A skin cannot
-add Windows Media Player's indexed/searchable media library, Burn and Sync
-tabs, CD ripping interface, Play To device routing, or Windows taskbar
-thumbnail controls. The playlist is a real queue, not a fake library.
+The library is a folder browser, not Windows Media Player's database. Burn,
+Sync, CD ripping, Play To, DRM playback, and Windows taskbar thumbnail controls
+are not implemented. Burn and Sync are visibly disabled.

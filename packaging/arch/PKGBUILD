@@ -1,6 +1,6 @@
 pkgname=aero7-desktop
 pkgver=0.2.0
-pkgrel=42
+pkgrel=43
 pkgdesc="Aero7-owned Wayland desktop session and shell integration"
 arch=('x86_64')
 options=('!debug')
@@ -15,6 +15,10 @@ depends=(
   'kwin'
   'plasma-workspace'
   'qt6-declarative'
+  'qt6-base'
+  'libvlc'
+  'taglib'
+  'xorg-xwayland'
   'networkmanager'
   'pipewire-pulse'
   'vlc'
