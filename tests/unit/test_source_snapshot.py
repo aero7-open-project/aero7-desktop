@@ -61,6 +61,19 @@ class SourceSnapshotTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Generated or unsafe"):
             snapshot.create_snapshot(self.root, self.base / "bad.tar.gz", "source")
 
+    def test_preserves_translation_script_named_build(self):
+        path = self.root / "theme/translate/build"
+        path.parent.mkdir(parents=True)
+        path.write_text("#!/bin/sh\ngettext --version\n")
+        path.chmod(0o755)
+        subprocess.run(["git", "-C", str(self.root), "add", str(path)], check=True)
+        output = self.base / "source.tar.gz"
+        snapshot.create_snapshot(self.root, output, "source")
+        with tarfile.open(output) as archive:
+            entry = archive.getmember("source/theme/translate/build")
+            self.assertEqual(entry.mode, 0o755)
+            self.assertEqual(archive.extractfile(entry).read(), path.read_bytes())
+
     def test_rejects_escaping_symlink(self):
         (self.base / "external").write_text("not source\n")
         (self.root / "escape").symlink_to("../external")

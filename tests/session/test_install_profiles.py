@@ -30,6 +30,7 @@ class InstallProfilesTest(unittest.TestCase):
                 with self.subTest(profile=name):
                     self.run_command("cmake", "-S", str(ROOT), "-B", str(build),
                                      "-G", "Ninja", "-DCMAKE_INSTALL_PREFIX=/usr",
+                                     "-DAERO7_BUILD_THEME=OFF",
                                      f"-DBUILD_TESTING={build_tests}",
                                      f"-DAERO7_INSTALL_TEST_TOOLS={install_tools}")
                     self.run_command("cmake", "--build", str(build), "-j2")

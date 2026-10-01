@@ -22,7 +22,7 @@
       <default>true</default>
     </entry>
     <entry name="orbWidth" type="Int">
-      <default>0</default>
+      <default>40</default>
     </entry>
     <entry name="enableShadow" type="Bool">
       <default>false</default>
@@ -42,7 +42,7 @@
     </entry>
 
     <entry name="defaultRunnerApp" type="String">
-      <default>krunner --replace</default>
+      <default>execbin</default>
     </entry>
     <entry name="appNameFormat" type="Int">
       <default>0</default>

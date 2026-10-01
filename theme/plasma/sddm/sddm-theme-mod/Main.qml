@@ -102,7 +102,8 @@ Item
     {
         id: userDelegate
 
-        Column
+        // Children use explicit anchors; a positioner must not own their y positions.
+        Item
         {
             id: delegateColumn
             width: listView.cellWidth
@@ -297,9 +298,18 @@ Item
             }
         }
         Component.onCompleted: {
-            inputPanel.source = Qt.platform.pluginName.includes("wayland") ? "SMOD/VirtualKeyboard_wayland.qml" : "SMOD/VirtualKeyboard.qml"
+            inputPanel.source = "SMOD/Aero7OnScreenKeyboard.qml"
         }
-        onStatusChanged: if (status === Loader.Ready && item) item.activated = active
+        onLoaded: {
+            inputPanel.item.targetField = password
+            inputPanel.item.submitCallback = function() {
+                let index = listView.currentIndex
+                let username = userModel.data(userModel.index(index, 0), Main.UserRoles.NameRole)
+                if (username != null) {
+                    sddm.login(username, password.text, session.index)
+                }
+            }
+        }
         onKeyboardActiveChanged: {
             if (keyboardActive) {
                 inputPanel.z = 99;
@@ -359,11 +369,8 @@ Item
                 narratorCheck.enabled = reply.narratorAvailable
                 stickyKeysCheck.checked = reply.stickyKeys
                 filterKeysCheck.checked = reply.filterKeys
-                if (!reply.narratorAvailable) {
-                    accessStatus.text = i18nd("aerothemeplasma-sddm-theme", "Narrator is unavailable because Orca is not installed.")
-                } else {
-                    accessStatus.text = ""
-                }
+                accessStatus.text = reply.narratorAvailable ? ""
+                    : i18nd("aerothemeplasma-sddm-theme", "Narrator is unavailable because Orca is not installed.")
             } else {
                 accessDialog.applyLocalSettings()
                 accessStatus.text = i18nd("aerothemeplasma-sddm-theme", "Accessibility settings applied.")
@@ -479,7 +486,7 @@ Item
         Item
         {
             id: userlistpage
-            anchors.fill: parent
+            // StackLayout owns this page's size and position.
 
             GridView
             {
@@ -581,7 +588,8 @@ Item
         {
             id: loginpage
 
-            Column
+            // Preserve the centered anchor origin without competing with child anchors.
+            Item
             {
                 id: mainColumn
                 anchors.centerIn: parent
@@ -1029,14 +1037,24 @@ Item
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 23
         anchors.horizontalCenter: parent.horizontalCenter
-        source: Qt.resolvedUrl("Assets/branding-white.png")
+        source: Qt.resolvedUrl("Assets/aero7-branding-r3.png")
+        // The source canvas preserves the historical 350x50 theme slot, but
+        // the actual Aero7 wordmark occupies its first 225 pixels. Crop that
+        // transparent tail so the visible logo, rather than its canvas, is
+        // centered on every display.
+        sourceClipRect: Qt.rect(0, 0, 225, 50)
+        width: Math.min(225, parent.width - 40)
+        height: width * 50 / 225
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        mipmap: true
         visible: pages.currentIndex != Main.LoginPage.Startup
     }
     SMOD.GenericButton {
             id: switchLayoutButton
 
-            property int currentIndex: keyboard.currentLayout
-            onCurrentIndexChanged: keyboard.currentLayout = currentIndex
+            readonly property int currentIndex: keyboard.currentLayout
+            readonly property var currentLayout: keyboard.layouts[currentIndex]
 
             anchors {
                 top: parent.top
@@ -1053,18 +1071,13 @@ Item
             KeyNavigation.tab: pages.currentIndex === Main.LoginPage.SelectUser ? listView : password
             KeyNavigation.down: pages.currentIndex === Main.LoginPage.SelectUser ? listView : password
 
-            text: keyboard.layouts && currentIndex >= 0 && currentIndex < keyboard.layouts.length
-                ? keyboard.layouts[currentIndex].shortName : ""
+            text: currentLayout ? currentLayout.shortName : ""
             onClicked: {
-                if (!keyboard.layouts || keyboard.layouts.length === 0) {
-                    currentIndex = 0
-                    return
+                const count = keyboard.layouts.length
+                if (count > 0) {
+                    keyboard.currentLayout = currentIndex >= 0 && currentIndex < count
+                        ? (currentIndex + 1) % count : 0
                 }
-                if (currentIndex < 0 || currentIndex >= keyboard.layouts.length) {
-                    currentIndex = 0
-                    return
-                }
-                currentIndex = (currentIndex + 1) % keyboard.layouts.length
             }
 
             visible: keyboard.layouts.length > 1 && pages.currentIndex != Main.LoginPage.Startup
@@ -1356,6 +1369,7 @@ Item
 
         indicator.width: 0
         indicator.height: 0
+        Accessible.name: i18nd("aerothemeplasma-sddm-theme", "Ease of Access and desktop environment")
 
         background: Image
         {
@@ -1451,18 +1465,48 @@ Item
                 return session.index === this.index
             }
             Component.onCompleted: {
+                var entries = [];
                 for(var i = 0; i < sessionModel.count; i++) {
                     const NameRole = sessionModel.KItemModels.KRoleNames.role("name");
                     const name = sessionModel.data(sessionModel.index(i, 0), NameRole);
+                    entries.push({name: name, index: i});
+                }
+
+                function sessionRank(name) {
+                    if(name === "Aero7 Desktop (Safe Mode)") return 0;
+                    if(name === "Aero7 Desktop") return 1;
+                    if(name.indexOf("AeroThemePlasma") === 0) return 2;
+                    if(name.indexOf("Plasma") === 0) return 3;
+                    return 100;
+                }
+
+                entries.sort(function(left, right) {
+                    var rankDifference = sessionRank(left.name) - sessionRank(right.name);
+                    return rankDifference !== 0 ? rankDifference : left.index - right.index;
+                });
+
+                for(var entryIndex = 0; entryIndex < entries.length; entryIndex++) {
+                    var entry = entries[entryIndex];
                     var menuitem = createMenuItem();
-                    menuitem.text = name;
-                    menuitem.index = i;
-                    var func = isIndex.bind({index: i});
+                    menuitem.text = entry.name;
+                    menuitem.index = entry.index;
+                    var func = isIndex.bind({index: entry.index});
                     menuitem.checkable = true;
                     menuitem.checked = Qt.binding(func);
-                    menuitem.triggered.connect(changeVal.bind({index: i}));
+                    menuitem.triggered.connect(changeVal.bind({index: entry.index}));
                     session.addAction(menuitem);
                 }
+
+                session.addItem(createMenuSeparator());
+                var keyboardItem = createMenuItem();
+                keyboardItem.text = i18nd("aerothemeplasma-sddm-theme", "On-Screen Keyboard");
+                keyboardItem.checkable = false;
+                keyboardItem.icon.source = Qt.resolvedUrl("Assets/keyboard.png");
+                keyboardItem.triggered.connect(function() {
+                    password.forceActiveFocus();
+                    inputPanel.showHide();
+                });
+                session.addAction(keyboardItem);
             }
 
         }

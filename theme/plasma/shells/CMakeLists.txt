@@ -1,4 +1,4 @@
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/plasma/shells/io.gitgud.wackyideas.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/share/plasma/shells)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/io.gitgud.wackyideas.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/share/plasma/shells)
 
 include(CTest)
 if(BUILD_TESTING)

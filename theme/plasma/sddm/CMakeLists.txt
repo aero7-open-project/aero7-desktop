@@ -1,7 +1,7 @@
 add_subdirectory(login-sessions)
 
 if(NOT INSTALL_X11_COMPONENTS)
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/plasma/sddm/sddm-theme-mod DESTINATION ${CMAKE_INSTALL_PREFIX}/share/sddm/themes)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/sddm-theme-mod DESTINATION ${CMAKE_INSTALL_PREFIX}/share/sddm/themes)
 endif()
 
 install(FILES aero7-accessibility.conf
@@ -14,4 +14,8 @@ if(BUILD_TESTING)
             -DTHEME_MAIN=${CMAKE_CURRENT_SOURCE_DIR}/sddm-theme-mod/Main.qml
             -DTHEME_CONFIG=${CMAKE_CURRENT_SOURCE_DIR}/aero7-accessibility.conf
             -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/verify_access_dialog.cmake)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_test(NAME aero7-sddm-runtime-layout
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_layout.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/sddm-theme-mod)
 endif()

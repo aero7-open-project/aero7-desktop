@@ -382,6 +382,6 @@ Image {
             horizontalCenter: parent.horizontalCenter
         }
 
-        source: "../images/watermark.png"
+        source: "../images/aero7-package-branding.png"
     }
 }

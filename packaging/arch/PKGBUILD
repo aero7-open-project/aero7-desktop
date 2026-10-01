@@ -1,6 +1,6 @@
 pkgname=aero7-desktop
 pkgver=0.2.0
-pkgrel=43
+pkgrel=44
 pkgdesc="Aero7-owned Wayland desktop session and shell integration"
 arch=('x86_64')
 options=('!debug')
@@ -48,6 +48,7 @@ build() {
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DAERO7_BUILD_THEME=OFF \
     -DBUILD_TESTING=OFF \
     -DAERO7_INSTALL_TEST_TOOLS="${AERO7_INSTALL_TEST_TOOLS:-OFF}"
   cmake --build build
@@ -56,6 +57,7 @@ build() {
 check() {
   cmake -S "$pkgname-$pkgver" -B test-build -G Ninja \
     -DCMAKE_BUILD_TYPE=None \
+    -DAERO7_BUILD_THEME=OFF \
     -DBUILD_TESTING=ON
   cmake --build test-build
   ctest --test-dir test-build --output-on-failure

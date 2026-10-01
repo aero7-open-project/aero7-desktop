@@ -8,7 +8,13 @@ mapfile -d '' shell_files < <(find . -path './build' -prune -o -type f -name '*.
 for file in "${shell_files[@]}"; do
     bash -n "$file"
 done
-shellcheck --severity=error "${shell_files[@]}" shell/session/aero7-session
+# Retired upstream installers are preserved as history, not an Aero7 install
+# path. Check their syntax above; lint the scripts we maintain and execute.
+maintained_shell_files=()
+for file in "${shell_files[@]}"; do
+    [[ "$file" == ./theme/deprecated/* ]] || maintained_shell_files+=("$file")
+done
+shellcheck --severity=error "${maintained_shell_files[@]}" shell/session/aero7-session
 
 mapfile -t qml_files < <(find shell -type f -name '*.qml' -print | sort)
 qmllint_binary="$(command -v qmllint || true)"

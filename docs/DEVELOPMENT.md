@@ -2,6 +2,12 @@
 
 ## Prerequisites and build
 
+The maintained shell/theme source is in `theme/`. The top-level CMake build
+includes it by default. `packaging/arch/dependencies.txt` lists the Arch
+build/test dependencies used by CI. To build only the session integration,
+set `-DAERO7_BUILD_THEME=OFF`; the separate theme package is built from
+`theme/` in the same repository. Do not fetch the retired theme fork.
+
 The tested development host is Arch Linux with CMake, Ninja, GCC, Qt 6,
 Kirigami, KIO, KService, Solid, NetworkManagerQt, PulseAudioQt,
 plasma-workspace/LibTaskManager, LayerShellQt, KPipeWire, gettext, Node.js,

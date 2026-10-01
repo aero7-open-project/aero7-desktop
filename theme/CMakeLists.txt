@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(aerothemeplasma-desktop)
+include(CTest)
 
 set(KF6_MIN_VERSION "6.0.0")
 find_package(ECM ${KF6_MIN_VERSION} REQUIRED NO_MODULE)

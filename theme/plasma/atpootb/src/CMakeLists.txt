@@ -39,7 +39,7 @@ target_link_libraries(atpootb_static PUBLIC
     KF6::Package
     KWin::kwin
 )
-target_include_directories(atpootb_static PUBLIC ${CMAKE_BINARY_DIR})
+target_include_directories(atpootb_static PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(atpootb_static PUBLIC Qt::Widgets)
 

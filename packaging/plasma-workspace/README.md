@@ -4,7 +4,8 @@ These patches apply to the previously tested Aero7 Plasma Workspace 6.7.4-3.2
 source candidate, which already contains `StartupSplashNotifier`. Apply
 `panel-ready-splash-handoff.patch` and `ksplash-transparent-exit.patch` when
 building the next Workspace candidate. The Aero7 look-and-feel source in the
-`aerothemeplasma` `testing` branch supplies the matching `Splash.qml` change.
+The included `theme/plasma/look-and-feel/authui7/contents/splash/Splash.qml`
+supplies the matching fade change in this repository's `testing` branch.
 
 The shell now sends the final `desktop` stage only after layout loading and
 every screen's desktop and panel containment report UI-ready. The splash

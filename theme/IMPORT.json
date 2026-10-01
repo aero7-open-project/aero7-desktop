@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "imported_from": "https://github.com/aero7-open-project/aerothemeplasma",
+  "upstream": "https://github.com/aeroshell-desktop/aerothemeplasma",
+  "branch": "testing",
+  "commit": "84c7aeff5444c73a27680370d123785acbf7c1c3",
+  "source_tree": "e0db2bc2f04e341a68fb7b25e72335a2d9a76fa7",
+  "date": "2026-10-01",
+  "destination": "theme/",
+  "history": "Non-squashed subtree import; original commits remain ancestors",
+  "archived_branch_refs": "refs/tags/archive/aerothemeplasma/branches/",
+  "archived_tag_refs": "refs/tags/archive/aerothemeplasma/tags/",
+  "package_overlays_from": "aero7-repo/packages/aerothemeplasma-desktop-git",
+  "licences": ["LICENSE", "THIRD_PARTY.md", "per-file SPDX and component licence directories"]
+}

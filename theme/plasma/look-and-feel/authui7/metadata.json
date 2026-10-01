@@ -11,13 +11,13 @@
             }
         ],
         "Category": "",
-        "Description": "Windows 7 styled splash screen",
+        "Description": "Aero7 Welcome, logout and lock screen",
         "Icon": "user-desktop",
         "Id": "authui7",
         "License": "AGPLv3",
-        "Name": "Windows 7 style",
+        "Name": "Aero7",
         "Version": "2.0",
-        "Website": "https://gitgud.io/wackyideas/aerothemeplasma"
+        "Website": "https://github.com/aero7-open-project/aero7-desktop"
     },
     "Keywords": "",
     "X-KDE-ParentApp": "org.kde.plasmashell",

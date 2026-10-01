@@ -78,7 +78,7 @@ Item {
         Rectangle { Layout.fillWidth: true }
         Image {
             id: watermark
-            source: "../images/watermark.png"
+            source: "../images/aero7-package-branding.png"
         }
         Rectangle { Layout.fillWidth: true }
     }

@@ -116,6 +116,7 @@ Item {
         anchors.verticalCenterOffset: -1
         style: Text.Sunken
         styleColor: "transparent"
+        color: "#f7f7f7"
         text: itemText
     }
     PlasmaComponents.Label {
@@ -128,6 +129,7 @@ Item {
         anchors.verticalCenterOffset: -1
         style: Text.Sunken
         styleColor: "transparent"
+        color: "#ffffff"
         opacity: 0.66
         text: itemText
     }

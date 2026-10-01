@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -14,18 +18,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install build and validation dependencies
-        run: >-
-          pacman -Syu --noconfirm
-          cmake ninja python git nodejs shellcheck gettext desktop-file-utils
-          qt6-declarative qt6-tools kirigami kio kservice solid
-          networkmanager-qt pulseaudio-qt plasma-workspace layer-shell-qt
-          kpipewire kwindowsystem qt6-svg ttf-dejavu ttf-liberation
+        run: |
+          mapfile -t dependencies < packaging/arch/dependencies.txt
+          pacman -Syu --needed --noconfirm "${dependencies[@]}"
       - name: Static and QML validation
         run: tests/ci/validate-static.sh
       - name: Build
         run: cmake -S . -B build -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=ON && cmake --build build
       - name: Unit, backend, service, parser, migration, and session tests
-        run: ctest --test-dir build --output-on-failure
+        run: QT_QPA_PLATFORM=offscreen dbus-run-session -- ctest --test-dir build --output-on-failure
       - name: Staged install and startup smoke test
         run: |
           DESTDIR="$PWD/stage" cmake --install build
@@ -33,6 +34,7 @@ jobs:
           test -f stage/usr/share/locale/aero7/LC_MESSAGES/dolphin.mo
           test ! -e stage/usr/bin/aero7-file-explorer
           test -x stage/usr/bin/aero7-recovery-ui
+          python tests/integration/check-unified-install.py stage
       - name: Build and test the included Desktop Gadgets runtime
         run: |
           cmake -S companions/aero7-gadgets -B gadgets-build -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=ON
@@ -54,20 +56,22 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install package build dependencies
-        run: >-
-          pacman -Syu --noconfirm
-          cmake ninja python git gettext qt6-declarative kirigami kio kservice
-          solid networkmanager-qt pulseaudio-qt plasma-workspace layer-shell-qt
-          kpipewire kwindowsystem qt6-svg ttf-dejavu ttf-liberation
+        run: |
+          mapfile -t dependencies < packaging/arch/dependencies.txt
+          pacman -Syu --needed --noconfirm "${dependencies[@]}"
       - name: Build an unprivileged Arch package
         run: |
           useradd -m builder
           package_root=/tmp/aero7-package-ci
           mkdir -p "$package_root"
-          cp packaging/arch/PKGBUILD "$package_root/PKGBUILD"
-          bsdtar -czf "$package_root/aero7-desktop-0.2.0.tar.gz" \
-            -s '|^\./|aero7-desktop-0.2.0/|' \
-            --exclude .git --exclude build --exclude dist --exclude artifacts .
+          mkdir -p "$package_root/session" "$package_root/theme"
+          cp packaging/arch/PKGBUILD "$package_root/session/PKGBUILD"
+          cp packaging/arch/theme/PKGBUILD "$package_root/theme/PKGBUILD"
+          python packaging/create-source-snapshot.py "$package_root/aero7-desktop-0.2.0.tar.gz"
+          cp "$package_root/aero7-desktop-0.2.0.tar.gz" "$package_root/session/"
+          cp "$package_root/aero7-desktop-0.2.0.tar.gz" "$package_root/theme/"
           chown -R builder:builder "$package_root"
-          su builder -c "cd '$package_root' && makepkg --nodeps --noconfirm"
-          test -n "$(find "$package_root" -maxdepth 1 -name 'aero7-desktop-*.pkg.tar.zst' -print -quit)"
+          su builder -c "cd '$package_root/session' && makepkg --nodeps --noconfirm"
+          su builder -c "cd '$package_root/theme' && makepkg --nodeps --noconfirm"
+          test -n "$(find "$package_root/session" -maxdepth 1 -name 'aero7-desktop-*.pkg.tar.zst' -print -quit)"
+          test -n "$(find "$package_root/theme" -maxdepth 1 -name 'aerothemeplasma-desktop-git-*.pkg.tar.zst' -print -quit)"

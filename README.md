@@ -16,7 +16,7 @@ a maintained modern browser and current Linux/KDE infrastructure.
 [![Arch Linux](https://img.shields.io/badge/Arch_Linux-supported-1793D1?logo=archlinux&logoColor=white)](https://archlinux.org/)
 [![Wayland](https://img.shields.io/badge/Wayland-default-FFBC00?logo=wayland&logoColor=black)](https://wayland.freedesktop.org/)
 [![KDE Plasma](https://img.shields.io/badge/KDE_Plasma-6-1D99F3?logo=kde&logoColor=white)](https://kde.org/plasma-desktop/)
-[![MIT License](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
+[![Licences](https://img.shields.io/badge/licences-MIT_%2B_AGPL--3.0-2ea44f.svg)](THIRD_PARTY.md)
 
 [Features](#features) ·
 [Documentation](https://github.com/aero7-open-project/aero7-desktop/wiki) ·
@@ -58,6 +58,13 @@ were also exercised. This is release-candidate evidence, not publication of a
 final Beta 2 ISO or physical-hardware certification.
 
 ## About the project
+
+This repository now includes the maintained AeroThemePlasma sources in
+[`theme/`](theme): the taskbar, Start menu, tray, desktop containment, splash,
+lock screen, SDDM theme, Snipping Tool, and accessibility helpers. Desktop and
+theme changes are developed and tested together on `testing`. The previous
+AeroThemePlasma repository is retired; its history and notices are preserved
+here. See [the consolidation notes](docs/REPOSITORY-CONSOLIDATION.md).
 
 Aero7 Desktop is the user-facing desktop environment for
 [Aero7](https://github.com/aero7-open-project/aero7). It recreates the familiar
@@ -172,12 +179,15 @@ evidence, but it is not a substitute for physical-hardware acceptance.
 
 ## License
 
-Aero7 Desktop is distributed under the [MIT License](LICENSE). Maintained
-dependencies, companion projects, and third-party assets retain their own
-licenses; see [THIRD_PARTY.md](THIRD_PARTY.md).
+Aero7's session and original integration code use the [MIT License](LICENSE).
+The included theme retains its [AGPL-3.0-or-later licence](theme/LICENSE), and
+its KDE-derived components retain their per-file SPDX and licence notices.
+Companion projects and imported artwork also retain their own licences; see
+[THIRD_PARTY.md](THIRD_PARTY.md).
 
-No Microsoft binaries, Windows system files, or proprietary Microsoft artwork
-are included.
+No Microsoft binaries or Windows system files are included. Imported theme
+artwork and historical previews retain the notices in
+[theme/THIRD_PARTY.md](theme/THIRD_PARTY.md).
 
 ## Legal / Trademark Notice
 

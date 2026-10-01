@@ -35,7 +35,7 @@ def source_files(root: Path) -> list[Path]:
         parts = relative.parts
         if (relative.is_absolute() or ".." in parts
                 or any(part in {".git", ".svn", ".hg", "__pycache__"} for part in parts)
-                or any(part == "build" or part.startswith("build-") for part in parts)
+                or any(part == "build" or part.startswith("build-") for part in parts[:-1])
                 or parts[0] in {"dist", "artifacts", "stage", "pkg"}
                 or any(parts[i:i + 3] in {("packaging", "arch", "src"),
                                          ("packaging", "arch", "pkg")}

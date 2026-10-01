@@ -539,6 +539,12 @@ Item {
         }
 
         source: "../images/branding.png"
+        sourceClipRect: Qt.rect(0, 0, 225, 50)
+        width: Math.min(225, parent.width - 40)
+        height: width * 50 / 225
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        mipmap: true
 
         visible: opacity > 0
         opacity: !inputPanel.keyboardActive

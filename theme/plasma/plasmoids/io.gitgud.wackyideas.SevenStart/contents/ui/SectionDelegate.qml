@@ -26,6 +26,7 @@ import org.kde.kirigami as Kirigami
 
 Item {
     id: sectionDelegate
+    required property string section
     width: parent.width
     height: Kirigami.Units.iconSizes.medium-1 //childrenRect.height
     objectName: "SectionDelegate"

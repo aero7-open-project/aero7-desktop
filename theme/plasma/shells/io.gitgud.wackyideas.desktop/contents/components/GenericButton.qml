@@ -84,6 +84,7 @@ Control {
     PlasmaComponents.Label {
         id: btnLabel
 
+        color: "white"
         anchors.fill: parent
 
         text: genericButton.text

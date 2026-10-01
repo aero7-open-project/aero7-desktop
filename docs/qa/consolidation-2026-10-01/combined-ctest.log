@@ -1,0 +1,93 @@
+Test project /tmp/aero7-unified-build
+      Start 10: install-profiles
+      Start 14: session-reconcile-execution
+      Start  5: source-policy
+      Start 33: aero7-detached-shell-launch
+ 1/43 Test #33: aero7-detached-shell-launch ................   Passed    1.25 sec
+      Start 34: aero7-detached-shell-launch-no-journal
+ 2/43 Test  #5: source-policy ..............................   Passed    1.64 sec
+      Start 18: aero7-sddm-runtime-layout
+ 3/43 Test #34: aero7-detached-shell-launch-no-journal .....   Passed    1.25 sec
+      Start 38: aero7-snipping-tool-notification-gate
+ 4/43 Test #18: aero7-sddm-runtime-layout ..................   Passed    1.02 sec
+      Start  7: snap-control
+ 5/43 Test #38: aero7-snipping-tool-notification-gate ......   Passed    0.61 sec
+      Start  2: unit-shell-service
+ 6/43 Test  #7: snap-control ...............................   Passed    0.60 sec
+      Start  3: migration-idempotence
+ 7/43 Test  #2: unit-shell-service .........................   Passed    0.30 sec
+      Start  9: monospace-default
+ 8/43 Test  #3: migration-idempotence ......................   Passed    0.24 sec
+      Start 43: aero7-kvantum-svg-references
+ 9/43 Test  #9: monospace-default ..........................   Passed    0.21 sec
+      Start  6: source-snapshot
+10/43 Test #43: aero7-kvantum-svg-references ...............   Passed    0.22 sec
+      Start 15: tray-layout
+11/43 Test  #6: source-snapshot ............................   Passed    0.18 sec
+      Start 30: aero7tasksmodeltest
+12/43 Test #14: session-reconcile-execution ................   Passed    3.82 sec
+      Start  1: portal-vault-policy
+dbus-daemon[106840]: [session uid=1000 pid=106840 pidfd=5] Activating service name='org.kde.ActivityManager' requested by ':1.1' (uid=1000 pid=107392 comm="/tmp/aero7-unified-build/theme/plasma/plasmoids/sr")
+13/43 Test #30: aero7tasksmodeltest ........................   Passed    0.09 sec
+      Start  8: snap-behavior
+14/43 Test #15: tray-layout ................................   Passed    0.17 sec
+      Start 24: aero7-group-preview-size
+15/43 Test  #1: portal-vault-policy ........................   Passed    0.09 sec
+      Start 28: systemtraymodeltest
+dbus-daemon[106840]: [session uid=1000 pid=106840 pidfd=5] Successfully activated service 'org.kde.ActivityManager'
+16/43 Test  #8: snap-behavior ..............................   Passed    0.05 sec
+      Start  4: session-artifacts
+17/43 Test #24: aero7-group-preview-size ...................   Passed    0.09 sec
+      Start 42: aero7-sddm-accessibility-helper
+18/43 Test #28: systemtraymodeltest ........................   Passed    0.09 sec
+      Start 11: screenshot-identity
+19/43 Test  #4: session-artifacts ..........................   Passed    0.09 sec
+      Start 12: media-associations
+20/43 Test #42: aero7-sddm-accessibility-helper ............   Passed    0.10 sec
+      Start 21: aero7-panel-shadow-margins
+21/43 Test #11: screenshot-identity ........................   Passed    0.08 sec
+      Start 13: media-skin
+22/43 Test #12: media-associations .........................   Passed    0.07 sec
+      Start 37: aero7-snipping-tool-pending-capture
+23/43 Test #21: aero7-panel-shadow-margins .................   Passed    0.06 sec
+      Start 23: aero7-task-tooltip-lifecycle
+24/43 Test #13: media-skin .................................   Passed    0.07 sec
+      Start 40: aero7-snipping-tool-icon-independence
+25/43 Test #23: aero7-task-tooltip-lifecycle ...............   Passed    0.03 sec
+      Start 32: appstreamtest
+26/43 Test #37: aero7-snipping-tool-pending-capture ........   Passed    0.06 sec
+      Start 35: aero7-snipping-tool-clipboard-data
+27/43 Test #35: aero7-snipping-tool-clipboard-data .........   Passed    0.01 sec
+      Start 17: aero7-sddm-ease-of-access-contract
+28/43 Test #40: aero7-snipping-tool-icon-independence ......   Passed    0.04 sec
+      Start 36: aero7-snipping-tool-application-identity
+29/43 Test #17: aero7-sddm-ease-of-access-contract .........   Passed    0.01 sec
+      Start 41: aero7-snipping-tool-icon-policy
+30/43 Test #32: appstreamtest ..............................   Passed    0.03 sec
+      Start 39: aero7-snipping-tool-capture-result
+31/43 Test #36: aero7-snipping-tool-application-identity ...   Passed    0.01 sec
+      Start 16: appstreamtest
+32/43 Test #39: aero7-snipping-tool-capture-result .........   Passed    0.01 sec
+      Start 19: appstreamtest
+33/43 Test #41: aero7-snipping-tool-icon-policy ............   Passed    0.01 sec
+      Start 20: appstreamtest
+34/43 Test #16: appstreamtest ..............................   Passed    0.02 sec
+      Start 22: aero7-start-search-load
+35/43 Test #19: appstreamtest ..............................   Passed    0.02 sec
+      Start 25: appstreamtest
+36/43 Test #20: appstreamtest ..............................   Passed    0.02 sec
+      Start 26: appstreamtest
+37/43 Test #25: appstreamtest ..............................   Passed    0.02 sec
+38/43 Test #26: appstreamtest ..............................   Passed    0.02 sec
+      Start 27: appstreamtest
+      Start 29: appstreamtest
+39/43 Test #29: appstreamtest ..............................   Passed    0.02 sec
+      Start 31: appstreamtest
+40/43 Test #27: appstreamtest ..............................   Passed    0.02 sec
+41/43 Test #31: appstreamtest ..............................   Passed    0.02 sec
+42/43 Test #22: aero7-start-search-load ....................   Passed    0.13 sec
+43/43 Test #10: install-profiles ...........................   Passed   14.09 sec
+
+100% tests passed out of 43
+
+Total Test time (real) =  14.09 sec

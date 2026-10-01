@@ -1,5 +1,15 @@
 # Third-party material
 
+The complete maintained AeroThemePlasma testing source is included at
+[`theme/`](theme), imported from `aero7-open-project/aerothemeplasma` commit
+`84c7aeff5444c73a27680370d123785acbf7c1c3` with its Git ancestry. It retains
+[`theme/LICENSE`](theme/LICENSE) (AGPL-3.0-or-later), its
+[`theme/THIRD_PARTY.md`](theme/THIRD_PARTY.md), per-file SPDX notices, and the
+licence directories of its KDE-derived components. The root MIT licence does
+not relicense this code or its artwork. Existing Aero7 package branding,
+keyboard, and configuration overlays are now maintained directly in this
+tree; their provenance remains that of the original package assets.
+
 `packaging/repository/aero7-repository.asc` is the public signing key from
 `memegeko/aero7-repo` at local revision `443f8df`. It is redistributed solely
 to authenticate packages from the configured Aero7 repository. Its expected

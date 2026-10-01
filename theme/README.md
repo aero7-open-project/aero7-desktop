@@ -1,4 +1,10 @@
-# AeroThemePlasma
+# AeroThemePlasma sources in Aero7 Desktop
+
+This source now lives in [`aero7-open-project/aero7-desktop`](https://github.com/aero7-open-project/aero7-desktop/tree/testing/theme).
+Use the parent repository's build, package recipes, tests and issue tracker.
+The upstream documentation below is retained for attribution and technical
+history. The manual installers are archived in `deprecated/`; Aero7 uses
+pacman packages. See [`../docs/REPOSITORY-CONSOLIDATION.md`](../docs/REPOSITORY-CONSOLIDATION.md).
 
 ## Aero7 downstream fork
 

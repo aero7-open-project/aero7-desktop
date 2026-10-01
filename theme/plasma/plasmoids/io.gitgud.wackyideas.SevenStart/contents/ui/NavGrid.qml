@@ -33,6 +33,8 @@ FocusScope {
   signal keyNavDown
 
   property alias triggerModel: listView.model
+  property var actionModel: triggerModel
+  property bool allowDrag: true
   property alias count: listView.count
   property alias currentIndex: listView.currentIndex
   property alias currentItem: listView.currentItem
@@ -114,8 +116,8 @@ FocusScope {
     }
     delegate: GenericItem {
       canNavigate: true
-      canDrag: true
-      triggerModel: listView.model
+      canDrag: navGrid.allowDrag
+      triggerModel: navGrid.actionModel
     }
   
     onCurrentIndexChanged: {

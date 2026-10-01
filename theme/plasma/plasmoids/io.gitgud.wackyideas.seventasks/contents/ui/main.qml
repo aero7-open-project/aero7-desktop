@@ -66,7 +66,7 @@ PlasmoidItem {
             text: i18n("Task Manager")
             icon.name: "ksysguardd"
             onTriggered: {
-                menu_executable.exec("kstart ksysguard");
+                menu_executable.exec("tux-manager");
 
             }
         }

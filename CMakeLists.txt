@@ -7,9 +7,11 @@ set(CMAKE_AUTOMOC ON)
 
 set(CMAKE_INSTALL_LIBDIR "lib" CACHE STRING "Library directory")
 set(CMAKE_INSTALL_LIBEXECDIR "lib" CACHE STRING "Executable library directory")
+set(CMAKE_INSTALL_SYSCONFDIR "/etc" CACHE PATH "System configuration directory")
 include(GNUInstallDirs)
 include(CTest)
 option(AERO7_INSTALL_TEST_TOOLS "Install VM acceptance helpers (test images only)" OFF)
+option(AERO7_BUILD_THEME "Build the included Aero7 Plasma shell, theme, SDDM and helpers" ON)
 
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent DBus Gui Qml Quick Widgets)
 find_package(PkgConfig REQUIRED)
@@ -291,4 +293,8 @@ if(BUILD_TESTING)
     set_tests_properties(session-reconcile-execution PROPERTIES TIMEOUT 60)
     add_test(NAME tray-layout
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/session/test_tray_layout.py)
+endif()
+
+if(AERO7_BUILD_THEME)
+    add_subdirectory(theme)
 endif()

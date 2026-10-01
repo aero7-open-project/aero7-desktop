@@ -1,5 +1,10 @@
 # Credits and Licensing
 
+The included `theme/` source preserves AeroThemePlasma's authors, Git history,
+AGPL-3.0-or-later licence and component-specific KDE notices. The root MIT
+licence applies to Aero7's original integration code and does not replace
+these inherited licences. The maintained source now lives in Aero7 Desktop.
+
 Aero7 Desktop is an independent open-source project developed for the Aero7
 Linux desktop.
 

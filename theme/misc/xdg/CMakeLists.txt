@@ -15,3 +15,5 @@ foreach(conf IN LISTS configs)
 endforeach()
 
 install(FILES autostart/x-atpootb.desktop DESTINATION ${KDE_INSTALL_SYSCONFDIR}/xdg/autostart/)
+install(FILES defaults/kwalletrc defaults/kdeglobals
+    DESTINATION ${KDE_INSTALL_SYSCONFDIR}/xdg)

@@ -1,0 +1,58 @@
+pkgname=aerothemeplasma-desktop-git
+pkgver=6.7.0_760
+pkgrel=1
+pkgdesc='Aero7 desktop shell, taskbar, Start, login theme, and native helpers'
+arch=('x86_64')
+url='https://github.com/aero7-open-project/aero7-desktop'
+license=('AGPL-3.0-or-later')
+depends=(
+  'gcc-libs' 'bash' 'glibc' 'aeroshell-libplasma' 'aeroshell-workspace'
+  'aeroshell-kwin-components' 'aerothemeplasma-sounds' 'aerothemeplasma-icons'
+  'aeroshell-smod' 'qt6-virtualkeyboard' 'qt6-multimedia' 'qt6-5compat'
+  'qt6-wayland' 'qt6-declarative' 'qt6-base' 'kconfigwidgets' 'ksvg'
+  'wayland' 'kiconthemes' 'plasma-activities' 'kjobwidgets' 'kio'
+  'kglobalaccel' 'kguiaddons' 'kpipewire' 'ki18n' 'kwin' 'plasma-workspace'
+  'powerdevil' 'kauth' 'kcmutils' 'networkmanager-qt' 'kconfig' 'kquickcharts'
+  'prison' 'knewstuff' 'kdeclarative' 'kirigami-addons' 'kcoreaddons'
+  'kservice' 'kxmlgui' 'plasma5support' 'kvantum' 'sddm' 'sddm-kcm'
+  'plasma-nm' 'plasma-pa' 'kwindowsystem' 'knotifications' 'knotifyconfig'
+  'kirigami' 'kitemmodels' 'kpackage' 'kwidgetsaddons' 'plasma-desktop'
+  'qterminal' 'vlc' 'spectacle' 'kcalc' 'featherpad' 'aero7-gadgets'
+  'aero7-computer-management' 'aero7-file-explorer' 'linux-control-panel'
+  'tuxmanager'
+)
+optdepends=('uac-polkit-agent' 'qrca')
+makedepends=('cmake' 'ninja' 'git' 'extra-cmake-modules'
+             'plasma-wayland-protocols' 'vulkan-headers')
+checkdepends=('python')
+provides=('aerothemeplasma-desktop')
+conflicts=('aerothemeplasma-desktop')
+groups=('aerothemeplasma')
+backup=('etc/xdg/kwalletrc')
+options=('!debug')
+
+# Both package templates consume the same complete Desktop source snapshot.
+# The repository recipe pins a tested Desktop commit instead of this template.
+_source_name=aero7-desktop-0.2.0
+source=("$_source_name.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cmake -S "$_source_name/theme" -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=None -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib -DBUILD_TESTING=ON
+  cmake --build build
+}
+
+check() {
+  QT_QPA_PLATFORM=offscreen dbus-run-session -- \
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$_source_name/theme/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$_source_name/theme/THIRD_PARTY.md" \
+    "$pkgdir/usr/share/licenses/$pkgname/THIRD_PARTY.md"
+}

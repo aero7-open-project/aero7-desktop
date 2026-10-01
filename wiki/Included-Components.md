@@ -3,6 +3,13 @@
 Aero7 Desktop is a complete session package, not a second shell layered over
 an unrelated visible desktop.
 
+The desktop repository includes the AeroThemePlasma-derived shell and login
+theme under `theme/`, alongside the Aero7 session and companion applications.
+Report desktop, Start, taskbar, tray, splash, lock-screen and SDDM issues in
+[Aero7 Desktop](https://github.com/aero7-open-project/aero7-desktop/issues).
+The old AeroThemePlasma repository has been retired. Existing package names
+remain compatible with installed systems.
+
 | Component | User-facing role |
 | --- | --- |
 | Aero7 Desktop session | Normal Wayland login and Safe Mode |

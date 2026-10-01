@@ -1,3 +1,9 @@
+// Aero7 owns the taskbar layout. Remove the stock Plasma panel (and any stale
+// Aero duplicates) before creating the one canonical Aero panel.
+var existingPanels = panels();
+for (var existingIndex = 0; existingIndex < existingPanels.length; ++existingIndex) {
+    existingPanels[existingIndex].remove();
+}
 var panel = new Panel("io.gitgud.wackyideas.panel");
 var panelScreen = panel.screen
 
@@ -50,7 +56,13 @@ if (panel.formFactor === "horizontal") {
 
 panel.addWidget("io.gitgud.wackyideas.SevenStart")
 //panel.addWidget("org.kde.plasma.showActivityManager")
-panel.addWidget("io.gitgud.wackyideas.seventasks")
+var tasks = panel.addWidget("io.gitgud.wackyideas.seventasks")
+tasks.currentConfigGroup = ["General"]
+tasks.writeConfig("launchers", [
+    "applications:qterminal.desktop",
+    "applications:org.aero7.FileExplorer.desktop",
+    "applications:aero7-internet-explorer.desktop"
+])
 
 /* Next up is determining whether to add the Input Method Panel
  * widget to the panel or not. This is done based on whether

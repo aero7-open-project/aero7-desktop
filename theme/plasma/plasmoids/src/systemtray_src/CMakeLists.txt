@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(QT_MIN_VERSION "6.9.0")
 set(KF6_MIN_VERSION "6.18.0")
-set(BUILD_TESTING ON)
 include(GNUInstallDirs)
 
 option(WITH_X11 "Build with X11 support. Building without is experimental" ON)
