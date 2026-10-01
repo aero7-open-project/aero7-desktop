@@ -13,7 +13,7 @@ optional; the native gadget runtime is part of the required desktop stack.
 
 The gadget package is built from `companions/aero7-gadgets`. It intentionally
 remains a separate package so it can be updated or restarted without replacing
-the session package, while its complete source and CI test are maintained in
+the session package, while its complete source and tests are maintained in
 this repository.
 
 `tests/vm/deploy.sh` creates a source archive from this repository, builds it
@@ -22,10 +22,10 @@ signing key, installs the signed dependency set, and validates installed
 artifacts. The package lifecycle scripts cover N→N+1 migration, reinstall,
 removal, separate Plasma session availability, and final reinstall.
 
-The public CI package job runs `makepkg` as an unprivileged build user with
-`--nodeps` only because the private/signed Aero7 repository is unavailable to
-GitHub's generic Arch container. The authoritative dependency and signature
-test is the clean VM deployment.
+GitHub runs source checks only; there is no public CI package job. The dedicated
+builder VM produces and tests packages, and the separate signed package server
+distributes them. Clean-VM deployment remains the dependency, signature and
+installed-session acceptance check.
 
 Never replace the repository key without updating its fingerprint and
 provenance in `THIRD_PARTY.md`. Never add Microsoft resources to the package.

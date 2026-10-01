@@ -16,6 +16,9 @@
 ## Verification
 
 - Source validation, local QML validation and `git diff --check`: passed.
+- GitHub run `36910874424` for `8451840`: its sole `source-checks` job passed,
+  with checkout, validation-tool installation and source/script tests only.
+  No compiler, Arch container or package-build job ran.
 - Node regression exercises both shipped scripts: existing images, separate
   per-monitor choices, slideshow, color, empty/new desktops, repeated calls
   and a changed first-login wallpaper: passed.
