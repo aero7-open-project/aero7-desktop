@@ -1,0 +1,92 @@
+diff --git a/shell/shellcorona.cpp b/shell/shellcorona.cpp
+--- a/shell/shellcorona.cpp
++++ b/shell/shellcorona.cpp
+@@ -141,6 +141,11 @@ void ShellCorona::init()
+     m_waitingPanelsTimer.setSingleShot(true);
+     m_waitingPanelsTimer.setInterval(250ms);
+     connect(&m_waitingPanelsTimer, &QTimer::timeout, this, &ShellCorona::createWaitingPanels);
++    connect(this, &ShellCorona::screenUiReadyChanged, this, [this](int, bool ready) {
++        if (ready) {
++            finishStartupSplashWhenUiReady();
++        }
++    });
+ 
+     connect(this, &Corona::containmentAdded, this, [this](Plasma::Containment *cont) {
+         if (cont->containmentType() == Plasma::Containment::Panel || cont->containmentType() == Plasma::Containment::CustomPanel) {
+@@ -865,6 +870,8 @@ void ShellCorona::load()
+         KConfigGroup coronaConfig(config(), u"General"_s);
+         setImmutability((Plasma::Types::ImmutabilityType)coronaConfig.readEntry("immutability", static_cast<int>(Plasma::Types::Mutable)));
+     }
++    m_initialLayoutLoaded = true;
++    finishStartupSplashWhenUiReady();
+ }
+ 
+ #ifndef NDEBUG
+@@ -1544,12 +1551,6 @@ void ShellCorona::checkAllDesktopsUiReady()
+         return;
+     }
+ 
+-    qCDebug(PLASMASHELL) << "Plasma Shell startup completed";
+-    if (!m_startupSplashNotifier) {
+-        m_startupSplashNotifier = new StartupSplashNotifier(this);
+-    }
+-    m_startupSplashNotifier->notify();
+-
+     m_waitingPanels.removeAll(nullptr);
+     if (!m_waitingPanels.isEmpty()) {
+         m_waitingPanelsTimer.start();
+@@ -1564,6 +1566,27 @@ void ShellCorona::checkAllDesktopsUiReady()
+             Q_EMIT screenUiReadyChanged(i, true);
+         }
+     }
++    finishStartupSplashWhenUiReady();
++}
++
++void ShellCorona::finishStartupSplashWhenUiReady()
++{
++    // Desktop containments can become ready before the saved panels have even
++    // been created. Do not uncover a desktop with a missing taskbar.
++    if (!m_initialLayoutLoaded || numScreens() == 0 || !m_waitingPanels.isEmpty()) {
++        return;
++    }
++    for (int screen = 0; screen < numScreens(); ++screen) {
++        if (!isScreenUiReady(screen)) {
++            return;
++        }
++    }
++
++    qCDebug(PLASMASHELL) << "Plasma Shell startup completed with panels ready";
++    if (!m_startupSplashNotifier) {
++        m_startupSplashNotifier = new StartupSplashNotifier(this);
++    }
++    m_startupSplashNotifier->notify();
+ }
+ 
+ Plasma::Containment *ShellCorona::createContainmentForActivity(const QString &activity, int screenNum)
+@@ -1679,6 +1702,7 @@ void ShellCorona::createWaitingPanels()
+         connect(panel, &QWindow::visibleChanged, this, checkUiReady);
+     }
+     m_waitingPanels = stillWaitingPanels;
++    finishStartupSplashWhenUiReady();
+ }
+ 
+ void ShellCorona::panelContainmentDestroyed(QObject *obj)
+diff --git a/shell/shellcorona.h b/shell/shellcorona.h
+--- a/shell/shellcorona.h
++++ b/shell/shellcorona.h
+@@ -296,6 +296,7 @@ private:
+     void setupWaylandIntegration();
+     void executeSetupPlasmoidScript(Plasma::Containment *containment, Plasma::Applet *applet);
+     void checkAllDesktopsUiReady();
++    void finishStartupSplashWhenUiReady();
+     void activateLauncherMenu(const QString &screenName);
+ 
+     void setupLookAndFeel();
+@@ -315,6 +316,7 @@ private:
+ 
+     ScreenPool *m_screenPool;
+     StartupSplashNotifier *m_startupSplashNotifier = nullptr;
++    bool m_initialLayoutLoaded = false;
+     QString m_shell;
+     KActivities::Controller *m_activityController;
+     QMap<const Plasma::Containment *, PanelView *> m_panelViews;
