@@ -32,13 +32,13 @@ Item {
     z: -9
 
     property int stage
+    // ksplashqml keeps the overlay alive for this long after the desktop
+    // stage, so fading this transparent item reveals the real desktop.
+    property int splashExitDelayMs: 500
 
     onStageChanged: {
-        if (stage == 5) {
-            //lockSuccess.play();
-
-            //fadeOut.running = true;
-            transitionAnim.opacity = 1;
+        if (stage >= 6) {
+            opacity = 0;
         }
     }
     /*MediaPlayer {
@@ -83,23 +83,7 @@ Item {
         Rectangle { Layout.fillWidth: true }
     }
 
-    Rectangle {
-        id: transitionAnim
-        opacity: 0
-        color: "black"
-        anchors.fill: parent
-        Behavior on opacity {
-            NumberAnimation { duration: 640; }
-        }
+    Behavior on opacity {
+        NumberAnimation { duration: root.splashExitDelayMs; easing.type: Easing.InOutQuad }
     }
-
-    /*OpacityAnimator {
-        id: fadeOut
-        running: false
-        target: transitionAnim
-        from: 0
-        to: 1
-        duration: 640
-        easing.type: Easing.InOutQuad
-    }*/
 }
