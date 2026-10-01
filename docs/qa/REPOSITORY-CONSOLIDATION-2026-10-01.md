@@ -79,3 +79,12 @@ These are local QA artifacts, not a signed production binary release. Builder
 recipes retain both existing package names and pin the tested combined source.
 Retire the old public theme repository by archiving it only after verifying
 the Desktop `testing` push and the preserved archive refs.
+
+## Clean-container CI follow-up
+
+The first GitHub packaging run used checkout's REST-archive fallback because
+the minimal Arch container did not yet have Git. Installing Git afterwards
+could not restore the absent repository metadata required by the deterministic
+snapshot tool. Both jobs now install Git before checkout. The tool's strict
+repository/source safety checks remain unchanged; no runtime/package payload
+was modified by this CI-only correction.

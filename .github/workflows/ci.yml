@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     steps:
+      - name: Install Git before checkout
+        run: pacman -Syu --needed --noconfirm git
       - uses: actions/checkout@v5
       - name: Install build and validation dependencies
         run: |
@@ -54,6 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     steps:
+      - name: Install Git before checkout
+        run: pacman -Syu --needed --noconfirm git
       - uses: actions/checkout@v5
       - name: Install package build dependencies
         run: |
