@@ -1,0 +1,17 @@
+[Settings]
+FallbackTheme=default
+
+[ContrastEffect]
+enabled=true
+contrast=0.25
+intensity=1.3
+saturation=1.2
+
+[BlurBehindEffect]
+enabled=true
+
+[Wallpaper]
+defaultWallpaperTheme=Aero7ShellDefault
+defaultFileSuffix=.png
+defaultWidth=1672
+defaultHeight=941

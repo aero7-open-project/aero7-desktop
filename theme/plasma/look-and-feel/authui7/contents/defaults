@@ -1,0 +1,27 @@
+[kdeglobals][General]
+ColorScheme=Aero7Light
+
+[kdeglobals][Icons]
+Theme=Windows 7 Aero
+
+[kdeglobals][KDE]
+widgetStyle=kvantum
+
+[kwinrc][WindowSwitcher]
+LayoutName=thumbnail_aero
+
+[plasmarc][Theme]
+name=Aero7
+
+[Wallpaper]
+Image=Aero7ShellDefault
+
+[kcminputrc][Mouse]
+cursorTheme=aero-drop
+
+[kwinrc][org.kde.kdecoration2]
+library=org.smod.smod
+theme=SMOD
+
+[KSplash]
+Theme=authui7

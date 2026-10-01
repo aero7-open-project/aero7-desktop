@@ -1,0 +1,13 @@
+[SddmGreeterTheme]
+Name=SMOD
+Description=Windows 7-like theme for SDDM
+Author=Souris, WackyIdeas
+Type=sddm-theme
+Version=1.0
+Website=https://gitgud.io/aeroshell/atp/aerothemeplasma/
+Screenshot=preview.png
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=sddm-theme-mod
+Theme-API=2.0
+QtVersion=6

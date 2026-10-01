@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Snipping Tool
+GenericName=Screenshot Capture Utility
+Comment=Capture a rectangular screenshot
+Exec=aero7-snipping-tool --capture
+Icon=aero7-snipping-tool
+Terminal=false
+Type=Application
+Categories=Utility;Graphics;
+Keywords=screenshot;snip;capture;
+StartupNotify=false
+X-KDE-Wayland-Interfaces=zkde_screencast_unstable_v1

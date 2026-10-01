@@ -1,0 +1,22 @@
+{
+    "KPackageStructure": "Plasma/Theme",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Aero7 contributors"
+            },
+            {
+                "Name": "AeroThemePlasma contributors"
+            }
+        ],
+        "Category": "Plasma Theme",
+        "Description": "A light Aero7 Plasma style with a translucent glass taskbar",
+        "EnabledByDefault": true,
+        "Id": "Aero7",
+        "License": "GPL-2.0-or-later",
+        "Name": "Aero7",
+        "Version": "1.0.0",
+        "Website": "https://github.com/memegeko/aero7"
+    },
+    "X-Plasma-API": "6.0"
+}
