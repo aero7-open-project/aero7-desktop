@@ -251,6 +251,10 @@ PlasmoidItem {
         }
         for(var i = 0; i < tasksModel.count; ++i) {
             var task = taskList.itemAtIndex(i);
+            // Delegates can disappear while a screen change rebuilds the list.
+            if (!task || !task.model) {
+                continue;
+            }
             if (!task.model.IsLauncher && !task.model.IsStartup) {
                 tasks.tasksModel.requestPublishDelegateGeometry(tasks.tasksModel.makeModelIndex(task.index),
                     backend.globalRect(task), task);
