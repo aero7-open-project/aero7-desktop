@@ -110,6 +110,9 @@ install(PROGRAMS
     services/session/aero7-snap-control
     DESTINATION ${AERO7_LIBEXECDIR}
 )
+install(FILES services/session/aero7-wallpaper-defaults.js
+    DESTINATION ${AERO7_LIBEXECDIR}
+)
 
 if(AERO7_INSTALL_TEST_TOOLS)
     install(PROGRAMS
@@ -268,6 +271,8 @@ if(BUILD_TESTING)
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/session/test_session_artifacts.py)
     add_test(NAME source-policy
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_source_policy.py)
+    add_test(NAME github-source-only-policy
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_ci_policy.py)
     add_test(NAME source-snapshot
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_source_snapshot.py)
     add_test(NAME snap-control
@@ -276,6 +281,8 @@ if(BUILD_TESTING)
     if(NODE_EXECUTABLE)
         add_test(NAME snap-behavior
             COMMAND ${NODE_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_snap_behavior.js)
+        add_test(NAME wallpaper-defaults
+            COMMAND ${NODE_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/session/test_wallpaper_defaults.js)
     endif()
     add_test(NAME monospace-default
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/unit/test_monospace_default.py)

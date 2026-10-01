@@ -4,7 +4,9 @@
 
 The maintained shell/theme source is in `theme/`. The top-level CMake build
 includes it by default. `packaging/arch/dependencies.txt` lists the Arch
-build/test dependencies used by CI. To build only the session integration,
+build/test dependencies used by the dedicated builder VM. GitHub performs
+lightweight source checks only, without compiling or creating packages.
+To build only the session integration,
 set `-DAERO7_BUILD_THEME=OFF`; the separate theme package is built from
 `theme/` in the same repository. Do not fetch the retired theme fork.
 

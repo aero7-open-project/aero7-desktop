@@ -18,7 +18,7 @@ esac
 state_home="${XDG_STATE_HOME:-$HOME/.local/state}/aero7-desktop"
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 layout_script=/usr/share/aero7-desktop/shell/aero7-shell-layout.js
-wallpaper=/usr/share/wallpapers/Aero7/contents/images/1672x941.png
+wallpaper_script="$(dirname "${BASH_SOURCE[0]}")/aero7-wallpaper-defaults.js"
 mkdir -p "$state_home" "$config_home"
 chmod 700 "$state_home"
 
@@ -106,12 +106,12 @@ apply_visual_defaults() {
     touch "$state_home/visual-defaults-v2.applied"
 }
 
-apply_wallpaper() {
-    # AeroShell may be restarted before Plasma has serialized its containment
-    # state. Reassert the real Aero7 image on every reconciliation so a shell
-    # recovery can never expose Plasma's black/default wallpaper.
-    if command -v plasma-apply-wallpaperimage >/dev/null 2>&1 && [[ -f "$wallpaper" ]]; then
-        plasma-apply-wallpaperimage "$wallpaper"
+ensure_wallpaper_defaults() {
+    # Fill only unconfigured desktops. Reapplying an image to all outputs on
+    # login, output repair or a theme change destroys the user's selection.
+    if [[ -f "$wallpaper_script" ]]; then
+        qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript \
+            "$(<"$wallpaper_script")" >/dev/null
     fi
 }
 
@@ -154,7 +154,7 @@ systemctl --user stop \
 qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript \
     "$(<"$layout_script")" >/dev/null
 
-apply_wallpaper
+ensure_wallpaper_defaults
 ensure_window_management_defaults
 
 if ((!layout_only)); then
@@ -177,7 +177,7 @@ reload_aeroshell_after_appearance_repair() {
     wait_for_aeroshell
     qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript \
         "$(<"$layout_script")" >/dev/null
-    apply_wallpaper
+    ensure_wallpaper_defaults
 }
 
 # Panel/output repair runs through the live scripting interface. Restarting

@@ -43,14 +43,13 @@ if name == 'xdg-user-dir':
             (commands / name).symlink_to(stub)
         layout = self.root / "layout.js"
         layout.write_text("// isolated layout fixture\n")
-        wallpaper = self.root / "wallpaper.png"
-        wallpaper.touch()
+        wallpaper_script = self.root / "aero7-wallpaper-defaults.js"
+        wallpaper_script.write_text((ROOT / "services/session/aero7-wallpaper-defaults.js").read_text())
         source = (ROOT / "services/session/aero7-session-setup").read_text()
         # Only absolute resources are redirected; control flow is the real script.
         replacements = {
             "/usr/lib/aero7-desktop/aero7-screenshot-identity": str(commands / "identity"),
             "/usr/share/aero7-desktop/shell/aero7-shell-layout.js": str(layout),
-            "/usr/share/wallpapers/Aero7/contents/images/1672x941.png": str(wallpaper),
             "/etc/skel/Desktop/Recycle Bin.desktop": str(self.root / "unused-template"),
         }
         for original, isolated in replacements.items():
@@ -75,7 +74,8 @@ if name == 'xdg-user-dir':
         result, calls = self.run_setup("--reconcile-layout-only")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(any("org.kde.PlasmaShell.evaluateScript" in call for call in calls))
-        self.assertTrue(any(call[0] == "plasma-apply-wallpaperimage" for call in calls))
+        self.assertFalse(any(call[0] == "plasma-apply-wallpaperimage" for call in calls))
+        self.assertTrue(any("desktop.readConfig" in str(call) for call in calls))
         self.assertFalse(any(call[:3] == ["systemctl", "--user", "restart"] for call in calls))
         self.assertFalse(any(call[0] == "kvantummanager" for call in calls))
         self.assertFalse(any(call[0] == "kwriteconfig6" and "kdeglobals" in call for call in calls))
@@ -88,13 +88,15 @@ if name == 'xdg-user-dir':
         self.assertIn(["kvantummanager", "--set", "KvDark"], calls)
         after = calls[calls.index(restart) + 1:]
         self.assertTrue(any("org.kde.PlasmaShell.evaluateScript" in call for call in after))
-        self.assertTrue(any(call[0] == "plasma-apply-wallpaperimage" for call in after))
+        self.assertTrue(any("desktop.readConfig" in str(call) for call in after))
+        self.assertFalse(any(call[0] == "plasma-apply-wallpaperimage" for call in calls))
 
     def test_initial_login_never_restarts_shell(self):
         result, calls = self.run_setup()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(["kvantummanager", "--set", "Windows7Aero"], calls)
         self.assertFalse(any(call[:3] == ["systemctl", "--user", "restart"] for call in calls))
+        self.assertFalse(any(call[0] == "plasma-apply-wallpaperimage" for call in calls))
 
     def test_extra_arguments_are_rejected_before_any_action(self):
         result, calls = self.run_setup("--reconcile-only", "unexpected")

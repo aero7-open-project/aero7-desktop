@@ -12,9 +12,10 @@ this migration.
 The import is a non-squashed Git subtree from theme `testing` commit
 `84c7aeff5444c73a27680370d123785acbf7c1c3`. Its complete commit ancestry,
 source, bundled icons, screenshots, translations, notices and licences are
-retained. All former GitHub branch heads and upstream tags are also preserved
-as `archive/aerothemeplasma/branches/*` and
-`archive/aerothemeplasma/tags/*` tags. `theme/IMPORT.json` records provenance.
+retained. The temporary `archive/aerothemeplasma/*` tags have been removed
+from Desktop at the maintainer's request. Original branch heads and tags remain
+in the retired public theme repository and verified offline Git bundles.
+`theme/IMPORT.json` records provenance.
 The root MIT licence does not replace the theme's AGPL or KDE notices.
 
 The old manual installers are retained under `theme/deprecated/` for history.
@@ -41,8 +42,10 @@ preserves existing package names, dependencies and ownership without relying
 on the retired repository for builds. Icons and sound packs retain their
 separate upstream source repositories.
 
-CI builds and tests the combined source, checks the staged installation and
-builds both Arch packages. `packaging/arch/dependencies.txt` records the
+GitHub checks syntax and source-level regressions only: it does not compile
+applications or build packages. Combined builds, staging checks and packages
+belong on the dedicated builder VM; the separate signed package server remains
+the distribution path. `packaging/arch/dependencies.txt` records the builder's
 Arch build/test package list. Source archives omit Git data and build output.
 
 ## Publication check

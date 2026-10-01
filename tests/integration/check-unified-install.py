@@ -6,6 +6,7 @@ import sys
 stage = Path(sys.argv[1]).resolve(strict=True)
 required = (
     "usr/bin/aero7-session",
+    "usr/lib/aero7-desktop/aero7-wallpaper-defaults.js",
     "usr/bin/aero7-media-player",
     "usr/bin/aero7-snipping-tool",
     "usr/bin/aero7-sddm-accessibility",

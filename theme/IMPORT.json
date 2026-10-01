@@ -8,8 +8,9 @@
   "date": "2026-10-01",
   "destination": "theme/",
   "history": "Non-squashed subtree import; original commits remain ancestors",
-  "archived_branch_refs": "refs/tags/archive/aerothemeplasma/branches/",
-  "archived_tag_refs": "refs/tags/archive/aerothemeplasma/tags/",
+  "archived_branch_refs": null,
+  "archived_tag_refs": null,
+  "historical_refs": "Temporary Desktop archive tags removed by maintainer request; original refs remain in the retired public theme repository and verified offline bundles",
   "package_overlays_from": "aero7-repo/packages/aerothemeplasma-desktop-git",
   "licences": ["LICENSE", "THIRD_PARTY.md", "per-file SPDX and component licence directories"]
 }
