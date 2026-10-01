@@ -88,3 +88,10 @@ could not restore the absent repository metadata required by the deterministic
 snapshot tool. Both jobs now install Git before checkout. The tool's strict
 repository/source safety checks remain unchanged; no runtime/package payload
 was modified by this CI-only correction.
+
+The subsequent container checkout also needed an explicit `safe.directory`
+entry: its files are mounted with the runner's ownership, while steps run as
+container root, and checkout's exception is confined to its temporary Git
+configuration. CI now trusts exactly `$GITHUB_WORKSPACE`, never a wildcard.
+This keeps snapshot enumeration working without weakening normal local Git
+ownership protections or modifying the developer's Git configuration.

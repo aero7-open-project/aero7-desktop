@@ -19,6 +19,8 @@ jobs:
       - name: Install Git before checkout
         run: pacman -Syu --needed --noconfirm git
       - uses: actions/checkout@v5
+      - name: Trust only the runner-mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Install build and validation dependencies
         run: |
           mapfile -t dependencies < packaging/arch/dependencies.txt
@@ -59,6 +61,8 @@ jobs:
       - name: Install Git before checkout
         run: pacman -Syu --needed --noconfirm git
       - uses: actions/checkout@v5
+      - name: Trust only the runner-mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Install package build dependencies
         run: |
           mapfile -t dependencies < packaging/arch/dependencies.txt
