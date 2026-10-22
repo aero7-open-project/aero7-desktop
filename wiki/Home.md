@@ -16,8 +16,10 @@ together in one native Linux session. A permanent Internet Explorer-compatible
 entry preserves the Aero7 browser identity while delegating web content to an
 installed modern browser.
 
-The current release line is a beta. It is suitable for Aero7 testing and daily
-evaluation, but some physical-hardware combinations still need certification.
+**Aero7 Beta 2 is NOT publicly released.** The desktop and related components
+are still undergoing bug fixes and stability testing. This beta source may be
+used for development and testing, but it is not a final ISO release or
+broad physical-hardware certification.
 
 ## Start here
 
