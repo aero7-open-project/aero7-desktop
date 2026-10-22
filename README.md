@@ -28,6 +28,12 @@ a maintained modern browser and current Linux/KDE infrastructure.
 
 ---
 
+> [!WARNING]
+> **Aero7 Beta 2 is NOT publicly released.** The desktop and related
+> components remain in integration testing while bugs and stability issues
+> are addressed. Source and beta package recipes do not mean that final
+> Beta 2 media or the complete package set have shipped.
+
 **Aero7 Desktop is an independent project and is not affiliated with or
 endorsed by Microsoft Corporation. Windows is a trademark of the Microsoft
 group of companies.**
@@ -36,7 +42,7 @@ group of companies.**
 > Aero7 Desktop is beta software. It is intended for Aero7 testing systems and
 > should not yet be treated as a physical-hardware production certification.
 
-## Beta 2 integration status
+## Beta 2 integration status — testing, not released
 
 The Beta 2 source line includes the complete Aero7 Wayland session, stable
 factory taskbar and desktop defaults, the SDDM and lock-screen branding fixes,
@@ -45,9 +51,9 @@ and the maintained companion applications. Application icons are embedded from
 the approved AeroThemePlasma icon pack so changing to Breeze, Breeze Dark, or
 another system theme does not replace Aero7 application identities.
 
-The source and package recipes are published independently from the Aero7 ISO.
-An ISO should be treated as available only when it appears on the main Aero7
-release page with matching checksums.
+The source and package recipes are available for review independently of the
+unreleased Aero7 Beta 2 ISO. A public ISO should be treated as available only
+after an explicit official release announcement with verified checksums.
 
 ## About the project
 
